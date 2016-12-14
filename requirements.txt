@@ -1,0 +1,4 @@
+requests
+tabulate
+pycrypto
+pyscrypt
