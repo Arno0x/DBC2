@@ -47,9 +47,9 @@ class PollingThread:
 		# Proceed with task result treatment
 		if proceed:			
 			if cmd == "runCLI":
-					print helpers.color("\n[*] Task ID [{}] on agent ID [{}] completed".format(taskID, agentID))
-					print "[{}]".format(task['cmd'])
-					print ""
+					#print helpers.color("\n[*] Task ID [{}] on agent ID [{}] completed".format(taskID, agentID))
+					#print "[{}]".format(task['cmd'])
+					#print ""
 					print result
 			
 			if cmd == "runModule":

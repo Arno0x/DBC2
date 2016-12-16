@@ -302,9 +302,16 @@ class AgentMenu(cmd.Cmd):
 			print helpers.color("[!] Agent can't be tasked, either because it's DEAD or already tasked with something")
 			return
 
-		userCmd = raw_input("CMD> ")
-		if userCmd:
-			self.agentHandler.taskAgentWithCLI(userCmd)
+		userCmd = "start"
+		self.agentHandler.taskAgentWithCLI("cls")
+
+		while userCmd != "exit":
+			userCmd = raw_input("Polling, please wait...")
+			if userCmd:
+				if userCmd != "exit":
+					self.agentHandler.taskAgentWithCLI(userCmd)
+				else:
+					print "Exiting"
 	
 	#------------------------------------------------------------------------------------
 	def do_launchProcess(self, args):
