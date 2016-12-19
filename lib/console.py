@@ -303,13 +303,16 @@ class AgentMenu(cmd.Cmd):
 			return
 
 		userCmd = "start"
-		self.agentHandler.taskAgentWithCLI("cls")
+		self.agentHandler.taskAgentWithCLI("\"Computer\";\"--------\";\"\";$env:COMPUTERNAME; \"\"; \"User\";\"----\";\"\";$env:USERNAME; $pwd")
 
 		while userCmd != "exit":
 			userCmd = raw_input("Polling, please wait...")
 			if userCmd:
 				if userCmd != "exit":
-					self.agentHandler.taskAgentWithCLI(userCmd)
+					if userCmd != "quit":
+						self.agentHandler.taskAgentWithCLI(userCmd)
+					else:
+						self.agentHandler.taskAgentWithCLI("exit")
 				else:
 					print "Exiting"
 	
