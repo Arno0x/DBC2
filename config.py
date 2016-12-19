@@ -24,4 +24,4 @@ defaultAccessToken = ""
 defaultMasterKey = ""
 
 # Background polling period in seconds
-defaultPollingPeriod = 8 
+defaultPollingPeriod = 2 

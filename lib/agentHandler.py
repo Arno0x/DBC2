@@ -29,7 +29,7 @@ class AgentHandler:
 		if r is not None:
 			# Commit this task for the current agent
 			self.statusHandler.commitTask(task)
-			print helpers.color("[+] Agent with ID [{}] has been tasked with task ID [{}]".format(self.agentID, task['id']))
+			#print helpers.color("[+] Agent with ID [{}] has been tasked with task ID [{}]".format(self.agentID, task['id']))
 		else:
 			print helpers.color("[!] Error tasking agent with ID [{}]".format(self.agentID))
 
