@@ -127,7 +127,10 @@ class MainHandler:
 
 		# Generate a powershell one liner stager that downloads and execute the agent stage (exe) in memory
 		if stagerType == "oneliner":
-			print genStager.oneLiner()
+			print
+			print helpers.color(genStager.oneLiner(), 'green')
+			print
+			print helpers.color("[*] HINT: You can use this powershell oneliner as is, or with one of the fantastic 'Nishang' client side attack vector generator")
 			return
 		elif stagerType == "batch":
 			genStager.batch()
@@ -137,6 +140,9 @@ class MainHandler:
 			return
 		elif stagerType == "msbuild":
 			genStager.msbuild()
+			return
+		elif stagerType == "javascript":
+			genStager.javascript()
 			return
 		elif stagerType == "ducky":
 			genStager.ducky()

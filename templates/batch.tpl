@@ -1,3 +1,3 @@
 @echo off
-start /b ${poshCmd}
+start /b ${oneliner}
 (goto) 2>nul & del "%~f0"

