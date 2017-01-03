@@ -80,10 +80,8 @@ namespace dropboxc2
             Console.WriteLine("------------ AGENT STARTING ------------");
 #endif
             
-            //string accessToken = args[0];
-            //byte[] cryptoKey = Convert.FromBase64String(args[1]);
-            string accessToken = "fQ3BQYzqGrAAAAAAAAAAOOsCWvbwHGEhBNbgfEk2uBGUa6OGYGmE6AKDPZTEnRjU";
-            byte[] cryptoKey = Convert.FromBase64String("kFJHsQJAwJXaT40EmaA3Mw==");
+            string accessToken = args[0];
+            byte[] cryptoKey = Convert.FromBase64String(args[1]);
         
             // Break flag used to exit the agent
             bool breakFlag = false;
