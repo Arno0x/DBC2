@@ -6,6 +6,7 @@ Miscelaneous helper functions used in DropboxC2
 """
 import string
 import base64
+import shlex
 from Crypto.Random import random
 from tabulate import tabulate
 from string import Template
@@ -140,6 +141,22 @@ def convertFromTemplate(parameters, templateFile):
 	except IOError:
 		print helpers.color("[!] Could not open or read template file [{}]".format(templateFile))
 		return None
+
+#------------------------------------------------------------------------
+def retrieveArgs(args, maxNbArgs):
+	nbArgs = 0
+	result = []
+
+	# Remove trailing and starting spaces
+	args = args.strip()
+
+	temp = shlex.split(args)
+	if len(temp) <= maxNbArgs:
+		return temp
+	else:
+		result = temp[:maxNbArgs-1]
+		result.append(' '.join(temp[maxNbArgs-1:len(temp)]))
+		return result
 
 #------------------------------------------------------------------------
 def color(string, color=None):

