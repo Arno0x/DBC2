@@ -143,7 +143,8 @@ def convertFromTemplate(parameters, templateFile):
 		return None
 
 #------------------------------------------------------------------------
-def retrieveArgs(args, maxNbArgs):
+def retrieveQuotedArgs(args, maxNbArgs):
+	"""Parses arguments that may contain double quote for escaping spaces in arguments"""
 	nbArgs = 0
 	result = []
 

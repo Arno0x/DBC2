@@ -1,6 +1,6 @@
 DBC2
 ============
-LAST/CURRENT VERSION: 0.2.1
+LAST/CURRENT VERSION: 0.2.2
 
 Author: Arno0x0x - [@Arno0x0x](http://twitter.com/Arno0x0x)
 
@@ -26,7 +26,7 @@ Features
 ----------------
 
 DBC2 main features:
-  - Various stager (Powershell one liner, batch file, MS-Office macro, javascript, msbuild compile file, ducky, more to come...)
+  - Various stager (Powershell one liner, batch file, MS-Office macro, javascript, msbuild file, SCT file, ducky, more to come...)
   - Single CLI commands (*one at a time, no environment persistency*)
   - Pseudo-interactive shell (*environment persistency*)
   - Send file to the agent
@@ -116,6 +116,8 @@ This is still version beta of this tool, and my first project developped with Py
 
 To be added in the next releases:
 - Gather basic system information for each agent at startup
+- Create some basic event at the agent side and event subscription and automatic action on controller side (*ex: "machine locked or screensaver started" would allow for some activity that is visible like sending keystrokes to some processes, or "a given process or connection has been established")
+- Add option for the stage to auto persist at first startup
 - Possibility to task an agent with more than one task at a time
 
 To be fixed:
