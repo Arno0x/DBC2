@@ -1,6 +1,6 @@
 DBC2
 ============
-LAST/CURRENT VERSION: 0.2.2
+LAST/CURRENT VERSION: 0.2.3
 
 Author: Arno0x0x - [@Arno0x0x](http://twitter.com/Arno0x0x)
 
@@ -11,7 +11,7 @@ This project was initially inspired by the fantastic Empire framework, but also 
 Check out this introduction and demo of basic functionnalities (v0.0.1) :
 [![Demo](https://dl.dropboxusercontent.com/s/uj7joge12iu6dn6/dbc2_demo.jpg?dl=0)](https://vimeo.com/195596062)
   
-New features in version 0.2 :
+New features in version 0.2.x :
 [![Demo](https://dl.dropboxusercontent.com/s/flldt93uprg33cp/dbc2_v0.2.jpg?dl=0)](https://vimeo.com/197902404)
 
 The app is distributed under the terms of the [GPLv3 licence](http://www.gnu.org/copyleft/gpl.html).
@@ -35,7 +35,7 @@ DBC2 main features:
   - Keylogger
   - Clipboard logger (*clipboard recording/spying*)
   - Screenshot capture
-  - Run PowerShell modules (*Endless capabilities: PowerSploit, Inveigh, Nishang, Empire modules, etc.*)
+  - Run and interact with PowerShell modules (*Endless capabilities: PowerSploit, Inveigh, Nishang, Empire modules, Powercat, etc.*)
   - Send key strokes to any process
   - Set persistency through scheduled task and single instance through Mutex
   
