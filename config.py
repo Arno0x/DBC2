@@ -22,11 +22,11 @@ defaultPath = {
 
 # Dropbox API access token
 # If this entry is empty or missing, user will be prompted to enter it manually at startup
-defaultAccessToken = ""
+defaultAccessToken = "fQ3BQYzqGrAAAAAAAAAAZm81_lZTdDJ9YLypKHA53Se3U0d2ZvhYtCfaPcXNnGx7"
 
 # Base64 encoded 128 bits key used for AES encryption
 # If this entry is empty or missing, user will be prompted to enter it manually at startup
-defaultMasterKey = ""
+defaultMasterKey = "kFJHsQJAwJXaT40EmaA3Mw=="
 
 # Background polling period in seconds
 defaultPollingPeriod = 8 

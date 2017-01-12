@@ -1,3 +1,5 @@
 /temp
+/incoming
 *.pyc
 myconfig.py
+config.py

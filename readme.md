@@ -8,7 +8,7 @@ DBC2 (DropboxC2) is a modular post-exploitation tool, composed of an agent runni
 
 This project was initially inspired by the fantastic Empire framework, but also as an objective to learn Python.
   
-Check out this introduction and demo :
+Check out this introduction and demo of basic functionnalities (v0.0.1) :
 [![Demo](https://dl.dropboxusercontent.com/s/uj7joge12iu6dn6/dbc2_demo.jpg?dl=0)](https://vimeo.com/195596062)
   
 New features in version 0.2 :
@@ -28,16 +28,16 @@ Features
 DBC2 main features:
   - Various stager (Powershell one liner, batch file, MS-Office macro, javascript, msbuild file, SCT file, ducky, more to come...)
   - Single CLI commands (*one at a time, no environment persistency*)
-  - Pseudo-interactive shell (*environment persistency*)
+  - Pseudo-interactive shell (*environment persistency*) - based on an idea from *0xDEADBEEF00 [at] gmail.com*
   - Send file to the agent
   - Retrieve file from the agent
   - Launch processes on the agent
   - Keylogger
   - Clipboard logger (*clipboard recording/spying*)
   - Screenshot capture
-  - Powershell modules (*Endless capabilities: PowerDump, Mimikatz, Inveigh, Nishang, Empire modules !!*)
+  - Run PowerShell modules (*Endless capabilities: PowerSploit, Inveigh, Nishang, Empire modules, etc.*)
   - Send key strokes to any process
-  - Persistency through scheduled task and single instance through Mutex
+  - Set persistency through scheduled task and single instance through Mutex
   
 Dependencies & requirements
 ----------------

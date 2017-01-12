@@ -39,14 +39,14 @@ class PollingThread:
 		# Error handling
 		if result is None:
 			proceed = False
-		elif cmd not in ['runCLI', 'runModule']:
+		elif cmd not in ['runCLI', 'runPSModule']:
 			if result.startswith("ERROR"):
 				print helpers.color("\n[!] Task ID [{}] on agent ID [{}] failed with error: [{}]".format(taskID, agentID, result))
 				proceed = False
 
 		# Proceed with task result treatment
 		if proceed:			
-			if cmd in ['runCLI', 'runModule']:
+			if cmd in ['runCLI', 'runPSModule']:
 					print helpers.color("\n[*] Task ID [{}] on agent ID [{}] completed".format(taskID, agentID))
 					print "[{}]".format(task['cmd'])
 					print ""

