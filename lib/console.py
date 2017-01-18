@@ -406,7 +406,7 @@ class AgentMenu(cmd.Cmd):
 			return
 		
 		# Ask the user if he wants an interactive shell with the module loaded
-		r = raw_input(helpers.color("[?] Once module loaded, do you want to get a powershell CLI to interact it (y/N)?"))
+		r = raw_input(helpers.color("[?] Once module loaded, do you want to get a powershell CLI to interact with it (y/N)?"))
 		if r.lower() == "y":
 			self.agentHandler.taskAgentWithRunPSModule(moduleName, moduleArgs, True)
 			print helpers.color("[*] Please wait while the module is being loaded and a shell returned...")

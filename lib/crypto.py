@@ -52,9 +52,9 @@ class Crypto(object):
 	def xor(cls, data, key):
 		l = len(key)
 		keyAsInt = map(ord, key)
-		return bytearray((
+		return bytes(bytearray((
 		    (data[i] ^ keyAsInt[i % l]) for i in range(0,len(data))
-		))
+		)))
     
 	#------------------------------------------------------------------------
 	@classmethod

@@ -1,6 +1,6 @@
 DBC2
 ============
-LAST/CURRENT VERSION: 0.2.3
+LAST/CURRENT VERSION: 0.2.4
 
 Author: Arno0x0x - [@Arno0x0x](http://twitter.com/Arno0x0x)
 
@@ -47,7 +47,7 @@ DBC2 requires a Dropbox application (*"App folder" only is sufficient*) to be cr
 On the controller side, DBC2 requires:
 * Python 2.7 (not tested with Python 3)
 * The following libraries, that can be installed using `pip install -r requirements.txt`:
-  - requests
+  - requests>=2.11
   - tabulate
   - pyscrypt
   - pycrypto

@@ -23,7 +23,7 @@ from lib import agentHandler
 from lib import pollingThread
 
 # make version and author for DropboxC2
-VERSION = "0.2.3"
+VERSION = "0.2.4"
 AUTHOR = "Arno0x0x - https://twitter.com/Arno0x0x"
 
 #****************************************************************************************

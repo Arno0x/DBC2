@@ -46,7 +46,7 @@ class DropboxHandler:
 			print helpers.color("[!]Error communicating with the Dropbox server")
 			print helpers.color(e,"red")
 			return None
-		except requests.ValueError as e:
+		except ValueError as e:
 			print helpers.color("[!]Error decoding JSON response")
 			print helpers.color(e,"red")
 			return None
