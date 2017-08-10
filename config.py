@@ -5,6 +5,7 @@ defaultPath = {
 	'modules': './modules',
 	'poshTpl': './templates/posh.tpl',
 	'onelinerTpl': './templates/oneliner.tpl',
+	'oneLiner2Tpl': './templates/oneliner2.tpl',
 	'batchTpl': './templates/batch.tpl',
 	'msbuildTpl': './templates/msbuild.tpl',
 	'duckyTpl': './templates/ducky.tpl',
