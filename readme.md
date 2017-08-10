@@ -1,6 +1,6 @@
 DBC2
 ============
-LAST/CURRENT VERSION: 0.2.4
+LAST/CURRENT VERSION: 0.2.5
 
 Author: Arno0x0x - [@Arno0x0x](http://twitter.com/Arno0x0x)
 
