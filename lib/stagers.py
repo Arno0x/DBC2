@@ -43,6 +43,25 @@ class GenStager:
 
 	#-----------------------------------------------------------
 	@classmethod
+	def batch2(cls, stagerParameters):
+		"""Creates a Windows batch file (.bat) that launches a powershell one liner command"""
+
+		# First generate the powershell one liner
+		oneLiner2 = helpers.convertFromTemplate(stagerParameters, cfg.defaultPath['oneLiner2Tpl'])
+
+		batch = helpers.convertFromTemplate({'oneliner': oneLiner2}, cfg.defaultPath['batchTpl'])
+		if batch == None: return
+				
+		try:
+			with open(cfg.defaultPath['batchStager'],"w+") as f:
+				f.write(batch)
+				f.close()
+				print helpers.color("[+] Batch stager saved in [{}]".format(cfg.defaultPath['batchStager']))
+		except IOError:
+			print helpers.color("[!] Could not write stager file [{}]".format(cfg.defaultPath['batchStager']))
+
+	#-----------------------------------------------------------
+	@classmethod
 	def macro(cls, stagerParameters):
 		"""Creates an Office VBA macro that launches a powershell one liner command"""
 		

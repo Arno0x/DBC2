@@ -192,7 +192,7 @@ class MainMenu(cmd.Cmd):
 		stagerType = arguments[0]
 		stageName = arguments[1]
 
-		if stagerType not in ['oneliner', 'batch', 'macro', 'msbuild', 'javascript', 'ducky', 'sct']:
+		if stagerType not in ['oneliner', 'batch', 'batch2', 'macro', 'msbuild', 'javascript', 'ducky', 'sct']:
 			print helpers.color("[!] Invalid stager type")
 			return
 
@@ -206,7 +206,7 @@ class MainMenu(cmd.Cmd):
 	def complete_genStager(self, text, line, startidx, endidx):
 		result = []
 		if startidx < 15:
-			for stagerType in ['oneliner', 'batch', 'macro', 'msbuild', 'javascript', 'ducky', 'sct']:
+			for stagerType in ['oneliner', 'batch', 'batch2', 'macro', 'msbuild', 'javascript', 'ducky', 'sct']:
 				if stagerType.startswith(text):
 					result.append(stagerType)	
 		else:

@@ -132,6 +132,9 @@ class MainHandler:
 		elif stagerType == "batch":
 			stagers.GenStager.batch(stagerParameters)
 			return
+		elif stagerType == "batch2":
+			stagers.GenStager.batch2(stagerParameters)
+			return
 		elif stagerType == "macro":
 			stagers.GenStager.macro(stagerParameters)
 			return

