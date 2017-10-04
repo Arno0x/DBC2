@@ -144,6 +144,9 @@ class MainHandler:
 		elif stagerType == "javascript":
 			stagers.GenStager.javascript(stagerParameters)
 			return
+		elif stagerType == "javascript2":
+			stagers.GenStager.javascript2(stagerParameters)
+			return
 		elif stagerType == "ducky":
 			stagers.GenStager.ducky(stagerParameters)
 			return

@@ -205,6 +205,23 @@ class GenStager:
 
 	#-----------------------------------------------------------
 	@classmethod
+	def javascript2(cls, stagerParameters):
+		"""Creates a javascript file that uses DotNetToJScript to launch a dbc2Loader serialized assembly"""
+			
+		# Construct the javascript file from a template, substituting palceholders with proper parameters
+		javascript = helpers.convertFromTemplate(stagerParameters, cfg.defaultPath['javascript2Tpl'])
+		if javascript == None: return
+
+		try:
+			with open(cfg.defaultPath['javascriptStager2'],"w+") as f:
+				f.write(javascript)
+				f.close()
+				print helpers.color("[+] Javascript2 stager saved in [{}]".format(cfg.defaultPath['javascriptStager2']))
+		except IOError:
+			print helpers.color("[!] Could not write stager file [{}]".format(cfg.defaultPath['javascriptStager2']))
+
+	#-----------------------------------------------------------
+	@classmethod
 	def msbuild(cls, stagerParameters):
 		"""Creates an msbuild.exe compilation file that launches a powershell one liner command"""
 		

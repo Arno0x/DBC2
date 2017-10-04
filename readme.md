@@ -1,6 +1,6 @@
 DBC2
 ============
-LAST/CURRENT VERSION: 0.2.5
+LAST/CURRENT VERSION: 0.2.6
 
 Author: Arno0x0x - [@Arno0x0x](http://twitter.com/Arno0x0x)
 
@@ -26,7 +26,7 @@ Features
 ----------------
 
 DBC2 main features:
-  - Various stager (Powershell one liner, batch file, MS-Office macro, javascript, msbuild file, SCT file, ducky, more to come...)
+  - Various stager (Powershell one liner, batch file, MS-Office macro, javascript, DotNetToJScript, msbuild file, SCT file, ducky, more to come...)
   - Single CLI commands (*one at a time, no environment persistency*)
   - Pseudo-interactive shell (*environment persistency*) - based on an idea from *0xDEADBEEF00 [at] gmail.com*
   - Send file to the agent
@@ -38,6 +38,8 @@ DBC2 main features:
   - Run and interact with PowerShell modules (*Endless capabilities: PowerSploit, Inveigh, Nishang, Empire modules, Powercat, etc.*)
   - Send key strokes to any process
   - Set persistency through scheduled task and single instance through Mutex
+  - Can run within `(w|c)script.exe` thanks to the DotNetToJScript stager (*javascript2*)
+  - Can be **injected into any process** thanks to the nativeWrapper and its corresponding position independant shellcode !
   
 Dependencies & requirements
 ----------------

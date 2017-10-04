@@ -10,6 +10,7 @@ defaultPath = {
 	'msbuildTpl': './templates/msbuild.tpl',
 	'duckyTpl': './templates/ducky.tpl',
 	'javascriptTpl': './templates/javascript.tpl',
+	'javascript2Tpl': './templates/dbc2Loader.tpl',
 	'sctTpl': './templates/sct.tpl',
 	'runPSModuleTpl': './templates/runPSModule.tpl',
 	'persistTpl': './templates/persist.tpl',
@@ -18,8 +19,10 @@ defaultPath = {
 	'msbuildStager': '/tmp/msbuild.xml',
 	'duckyStager': '/tmp/ducky.txt',
 	'javascriptStager': '/tmp/stager.js',
+	'javascriptStager2': '/tmp/stager2.js',
 	'sctStager': '/tmp/stager.sct'
 }
+
 
 # Dropbox API access token
 # If this entry is empty or missing, user will be prompted to enter it manually at startup

