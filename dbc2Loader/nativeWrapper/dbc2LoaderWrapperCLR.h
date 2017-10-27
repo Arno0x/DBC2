@@ -2,8 +2,7 @@
 #define NATIVEDLLHOSTCLRDLL_H_
 
 // extern "C" required to  avoid name mangling by C++ compiler
-// Exporting function as "SayHello" to bypass a strange bug in sRDI with functionNameHash
-extern "C" __declspec(dllexport) int SayHello(wchar_t* argument);
+extern "C" __declspec(dllexport) int Dbc2Loader(wchar_t* argument);
 
 
 // This is the dbc2Loader.dll managed DLL represented as an array of bytes (use my tool "transformFile.py -i dbc2Loader.dll -f cpp")
